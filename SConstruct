@@ -12,7 +12,8 @@ def add_sources(sources, dirpath, extension):
 def gen_gdnative_lib(target, source, env):
     for t in target:
         with open(t.srcnode().path, 'w') as w:
-            w.write(source[0].get_contents().replace('{GDNATIVE_PATH}', os.path.splitext(t.name)[0]).replace('{TARGET}', env['target']))
+            content = source[0].get_contents().decode()
+            w.write(content.replace('{GDNATIVE_PATH}', os.path.splitext(t.name)[0]).replace('{TARGET}', env['target']))
 
 
 env = Environment()
