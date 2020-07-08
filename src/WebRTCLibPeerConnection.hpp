@@ -3,10 +3,12 @@
 
 #include <Godot.hpp> // Godot.hpp must go first, or windows builds breaks
 
-#include "api/peerconnectioninterface.h" // interface for all things needed from WebRTC
-#include "media/base/mediaengine.h" // needed for CreateModularPeerConnectionFactory
+//#include "api/peerconnectioninterface.h" // interface for all things needed from WebRTC
+//#include "media/base/mediaengine.h" // needed for CreateModularPeerConnectionFactory
 #include <functional> // std::function
 #include <mutex> // mutex @TODO replace std::mutex with Godot mutex
+#include <queue>
+#include <com/amazonaws/kinesis/video/webrtcclient/Include.h>
 
 #include "net/WebRTCPeerConnectionNative.hpp"
 
@@ -16,7 +18,11 @@ class WebRTCLibPeerConnection : public WebRTCPeerConnectionNative {
 	GODOT_CLASS(WebRTCLibPeerConnection, WebRTCPeerConnectionNative);
 
 private:
-	godot_error _create_pc(webrtc::PeerConnectionInterface::RTCConfiguration &config);
+	std::mutex *mutex_signal_queue;
+	std::queue<std::function<void()> > signal_queue;
+	RtcPeerConnection *peer_connection = nullptr;
+
+	godot_error _create_pc(RtcConfiguration *config);
 
 public:
 	static void _register_methods();
@@ -43,6 +49,7 @@ public:
 	// void queue_signal(godot::StringName p_name, Variant_ARG_LIST);
 	void queue_packet(uint8_t *, int);
 
+#if 0
 	/** PeerConnectionObserver callback functions **/
 	class GodotPCO : public webrtc::PeerConnectionObserver {
 	public:
@@ -89,6 +96,7 @@ public:
 	rtc::Thread *signaling_thread;
 	rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> pc_factory;
 	rtc::scoped_refptr<webrtc::PeerConnectionInterface> peer_connection;
+#endif
 };
 
 } // namespace godot_webrtc

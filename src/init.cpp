@@ -70,6 +70,7 @@ extern "C" void GDN_EXPORT godot_gdnative_singleton() {
 
 /* Godot export stuff */
 extern "C" void GDN_EXPORT godot_gdnative_init(godot_gdnative_init_options *o) {
+	initKvsWebRtc();
 	const godot_gdnative_core_api_struct *api = o->api_struct;
 	for (int i = 0; i < api->num_extensions; i++) {
 
@@ -94,6 +95,7 @@ extern "C" void GDN_EXPORT godot_gdnative_terminate(godot_gdnative_terminate_opt
 		WebRTCPeerConnectionNative::_net_api->godot_net_set_webrtc_library(NULL);
 	}
 	godot::Godot::gdnative_terminate(o);
+	deinitKvsWebRtc();
 }
 
 extern "C" void GDN_EXPORT godot_nativescript_init(void *handle) {

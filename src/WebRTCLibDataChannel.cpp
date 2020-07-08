@@ -2,6 +2,14 @@
 
 using namespace godot_webrtc;
 
+void _on_channel_open(UINT64 p_user, RtcDataChannel *p_channel) {
+	WARN_PRINT("open!");
+}
+
+void _on_channel_message(UINT64 p_user, RtcDataChannel *p_channel, BOOL p_is_binary, PBYTE p_buffer, UINT32 p_buffer_size) {
+	WARN_PRINT("on message!");
+}
+#if 0
 // Channel observer
 WebRTCLibDataChannel::ChannelObserver::ChannelObserver(WebRTCLibDataChannel *parent) {
 	this->parent = parent;
@@ -16,11 +24,12 @@ void WebRTCLibDataChannel::ChannelObserver::OnStateChange() {
 
 void WebRTCLibDataChannel::ChannelObserver::OnBufferedAmountChange(uint64_t previous_amount) {
 }
+#endif
 
 // DataChannel
-WebRTCLibDataChannel *WebRTCLibDataChannel::new_data_channel(rtc::scoped_refptr<webrtc::DataChannelInterface> p_channel) {
+WebRTCLibDataChannel *WebRTCLibDataChannel::new_data_channel(RtcDataChannel *p_channel) {
 	// Invalid channel result in NULL return
-	ERR_FAIL_COND_V(p_channel.get() == nullptr, NULL);
+	ERR_FAIL_COND_V(!p_channel, nullptr);
 
 	// Instance a WebRTCDataChannelGDNative object
 	godot::WebRTCDataChannelGDNative *out = godot::WebRTCDataChannelGDNative::_new();
@@ -37,14 +46,18 @@ WebRTCLibDataChannel *WebRTCLibDataChannel::new_data_channel(rtc::scoped_refptr<
 	return tmp;
 }
 
-
-void WebRTCLibDataChannel::bind_channel(rtc::scoped_refptr<webrtc::DataChannelInterface> p_channel) {
-	ERR_FAIL_COND(p_channel.get() == nullptr);
+void WebRTCLibDataChannel::bind_channel(RtcDataChannel *p_channel) {
+	ERR_FAIL_COND(!p_channel);
 
 	channel = p_channel;
+	label = godot::String(channel->name);
+	dataChannelOnOpen(p_channel, (UINT64)this, _on_channel_open);
+	dataChannelOnMessage(p_channel, (UINT64)this, _on_channel_message);
+#if 0
 	label = p_channel->label();
 	protocol = p_channel->protocol();
 	channel->RegisterObserver(&observer);
+#endif
 }
 
 void WebRTCLibDataChannel::queue_packet(const uint8_t *data, uint32_t size) {
@@ -73,43 +86,64 @@ bool WebRTCLibDataChannel::was_string_packet() const {
 }
 
 WebRTCLibDataChannel::ChannelState WebRTCLibDataChannel::get_ready_state() const {
+#if 0
 	ERR_FAIL_COND_V(channel.get() == nullptr, STATE_CLOSED);
 	return (ChannelState)channel->state();
+#endif
+	return (ChannelState)0;
 }
 
 const char *WebRTCLibDataChannel::get_label() const {
-	ERR_FAIL_COND_V(channel.get() == nullptr, "");
-	return label.c_str();
+	ERR_FAIL_COND_V(!channel, "");
+	return label.utf8().get_data();
 }
 
 bool WebRTCLibDataChannel::is_ordered() const {
+#if 0
 	ERR_FAIL_COND_V(channel.get() == nullptr, false);
 	return channel->ordered();
+#endif
+	return false;
 }
 
 int WebRTCLibDataChannel::get_id() const {
+#if 0
 	ERR_FAIL_COND_V(channel.get() == nullptr, -1);
 	return channel->id();
+#endif
+	return 0;
 }
 
 int WebRTCLibDataChannel::get_max_packet_life_time() const {
+#if 0
 	ERR_FAIL_COND_V(channel.get() == nullptr, 0);
 	return channel->maxRetransmitTime();
+#endif
+	return 0;
 }
 
 int WebRTCLibDataChannel::get_max_retransmits() const {
+#if 0
 	ERR_FAIL_COND_V(channel.get() == nullptr, 0);
 	return channel->maxRetransmits();
+#endif
+	return 0;
 }
 
 const char *WebRTCLibDataChannel::get_protocol() const {
+#if 0
 	ERR_FAIL_COND_V(channel.get() == nullptr, "");
 	return protocol.c_str();
+#endif
+	return "";
 }
 
 bool WebRTCLibDataChannel::is_negotiated() const {
+#if 0
 	ERR_FAIL_COND_V(channel.get() == nullptr, false);
 	return channel->negotiated();
+#endif
+	return false;
 }
 
 godot_error WebRTCLibDataChannel::poll() {
@@ -117,10 +151,12 @@ godot_error WebRTCLibDataChannel::poll() {
 }
 
 void WebRTCLibDataChannel::close() {
+#if 0
 	if(channel.get() != nullptr) {
 		channel->Close();
 		channel->UnregisterObserver();
 	}
+#endif
 }
 
 godot_error WebRTCLibDataChannel::get_packet(const uint8_t **r_buffer, int *r_len) {
@@ -141,11 +177,12 @@ godot_error WebRTCLibDataChannel::get_packet(const uint8_t **r_buffer, int *r_le
 }
 
 godot_error WebRTCLibDataChannel::put_packet(const uint8_t *p_buffer, int p_len) {
+#if 0
 	ERR_FAIL_COND_V(channel.get() == nullptr, GODOT_ERR_UNAVAILABLE);
 
 	webrtc::DataBuffer webrtc_buffer(rtc::CopyOnWriteBuffer(p_buffer, p_len), true);
 	ERR_FAIL_COND_V(!channel->Send(webrtc_buffer), GODOT_FAILED);
-
+#endif
 	return GODOT_OK;
 }
 
@@ -164,7 +201,7 @@ void WebRTCLibDataChannel::_init() {
 	register_interface(&interface);
 }
 
-WebRTCLibDataChannel::WebRTCLibDataChannel() : observer(this) {
+WebRTCLibDataChannel::WebRTCLibDataChannel() {
 	mutex = new std::mutex;
 }
 

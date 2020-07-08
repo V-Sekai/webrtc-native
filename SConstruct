@@ -131,14 +131,16 @@ if target == 'debug':
 else:
     lib_path += '/Release'
 
-env.Append(CPPPATH=[webrtc_dir + "/include"])
+kinesis_libs = ['libkvspic', 'libcrypto', 'libssl', 'libusrsctp', 'libsrtp2', 'libkvsWebrtcClient', 'libkvspicState', 'libkvspicUtils']
+kinesis_libs.reverse()
+
+#env.Append(CPPPATH=[webrtc_dir + "/include"])
+env.Append(CPPPATH=['kinesis' + "/include"])
 
 if target_platform == "linux":
-    env.Append(LIBS=[lib_name])
-    env.Append(LIBPATH=[lib_path])
-    #env.Append(CCFLAGS=["-std=c++11"])
-    env.Append(CCFLAGS=["-DWEBRTC_POSIX", "-DWEBRTC_LINUX"])
-    env.Append(CCFLAGS=["-DRTC_UNUSED=''", "-DNO_RETURN=''"])
+    env.Append(LIBS=kinesis_libs)
+    env.Append(LIBPATH=[lib_path, lib_path.replace('webrtc/', 'kinesis/')])
+    env.Append(CCFLAGS=["-std=c++11"])
 
 elif target_platform == "windows":
     # Mostly VisualStudio

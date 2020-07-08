@@ -1,6 +1,7 @@
 #include "WebRTCLibDataChannel.hpp"
 #include "WebRTCLibPeerConnection.hpp"
 
+#if 0
 using namespace godot_webrtc;
 
 // CreateSessionObseerver
@@ -51,3 +52,4 @@ void WebRTCLibPeerConnection::GodotPCO::OnRemoveStream(rtc::scoped_refptr<webrtc
 void WebRTCLibPeerConnection::GodotPCO::OnRenegotiationNeeded() {}
 void WebRTCLibPeerConnection::GodotPCO::OnIceConnectionChange(webrtc::PeerConnectionInterface::IceConnectionState new_state) {}
 void WebRTCLibPeerConnection::GodotPCO::OnIceGatheringChange(webrtc::PeerConnectionInterface::IceGatheringState new_state) {}
+#endif

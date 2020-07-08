@@ -3,31 +3,45 @@
 #include "WebRTCLibPeerConnection.hpp"
 #include "WebRTCLibDataChannel.hpp"
 
+#include "JSON.hpp"
+#include "JSONParseResult.hpp"
+
 using namespace godot_webrtc;
 
-godot_error _parse_ice_server(webrtc::PeerConnectionInterface::RTCConfiguration &r_config, godot::Dictionary p_server) {
-	godot::Variant v;
-	webrtc::PeerConnectionInterface::IceServer ice_server;
-	godot::String url;
-
+godot_error _parse_ice_server(RtcConfiguration *r_config, godot::Dictionary p_server, int *r_pos) {
 	ERR_FAIL_COND_V(!p_server.has("urls"), GODOT_ERR_INVALID_PARAMETER);
+
+	godot::Variant v;
+	godot::String url;
+	int url_size = 0;
+	int cur = *r_pos;
 
 	// Parse mandatory URL
 	v = p_server["urls"];
 	if (v.get_type() == godot::Variant::STRING) {
 		url = v;
-		ice_server.urls.push_back(url.utf8().get_data());
+		url_size = url.utf8().length();
+		ERR_FAIL_COND_V(url_size > MAX_ICE_CONFIG_URI_LEN, GODOT_ERR_INVALID_PARAMETER);
+		memcpy(r_config->iceServers[cur].urls, url.utf8().get_data(), url_size);
+		cur++;
 	} else if (v.get_type() == godot::Variant::ARRAY) {
 		godot::Array names = v;
+		ERR_FAIL_COND_V(cur + names.size() >= MAX_ICE_SERVERS_COUNT, GODOT_ERR_INVALID_PARAMETER);
 		for (int j = 0; j < names.size(); j++) {
 			v = names[j];
 			ERR_FAIL_COND_V(v.get_type() != godot::Variant::STRING, GODOT_ERR_INVALID_PARAMETER);
 			url = v;
-			ice_server.urls.push_back(url.utf8().get_data());
+			url_size = url.utf8().length();
+			ERR_FAIL_COND_V(url_size > MAX_ICE_CONFIG_URI_LEN, GODOT_ERR_INVALID_PARAMETER);
+			memcpy(r_config->iceServers[cur].urls, url.utf8().get_data(), url_size);
+			cur++;
 		}
 	} else {
 		ERR_FAIL_V(GODOT_ERR_INVALID_PARAMETER);
 	}
+	*r_pos = cur;
+
+#if 0
 	// Parse credentials (only meaningful for TURN, only support password)
 	if (p_server.has("username") && (v = p_server["username"]) && v.get_type() == godot::Variant::STRING) {
 		ice_server.username = (v.operator godot::String()).utf8().get_data();
@@ -37,31 +51,68 @@ godot_error _parse_ice_server(webrtc::PeerConnectionInterface::RTCConfiguration 
 	}
 
 	r_config.servers.push_back(ice_server);
+#endif
 	return GODOT_OK;
 }
 
-godot_error _parse_channel_config(webrtc::DataChannelInit &r_config, godot::Dictionary p_dict) {
+godot_error _parse_channel_config(RtcDataChannelInit *r_config, godot::Dictionary p_dict) {
 	godot::Variant v;
-#define _SET_N(PROP, PNAME, TYPE) if (p_dict.has(#PROP)) { v = p_dict[#PROP]; if(v.get_type() == godot::Variant::TYPE) r_config.PNAME = v; }
+#define _SET_N(PROP, PNAME, TYPE) if (p_dict.has(#PROP)) { v = p_dict[#PROP]; if(v.get_type() == godot::Variant::TYPE) r_config->PNAME = v; }
 #define _SET(PROP, TYPE) _SET_N(PROP, PROP, TYPE)
+	// FIXME not supported!
 	_SET(negotiated, BOOL);
-	_SET(id, INT);
-	_SET_N(maxPacketLifeTime, maxRetransmitTime, INT);
+	//_SET(id, INT);
+	_SET(maxPacketLifeTime, INT);
 	_SET(maxRetransmits, INT);
 	_SET(ordered, BOOL);
 #undef _SET
 	if (p_dict.has("protocol") && (v = p_dict["protocol"]) && v.get_type() == godot::Variant::STRING) {
-		r_config.protocol = v.operator godot::String().utf8().get_data();
+		// TODO
+		//r_config.protocol = v.operator godot::String().utf8().get_data();
 	}
 
 	// ID makes sense only when negotiated is true (and must be set in that case)
-	ERR_FAIL_COND_V(r_config.negotiated ? r_config.id == -1 : r_config.id != -1, GODOT_ERR_INVALID_PARAMETER);
+	// FIXME not supported.
+	//ERR_FAIL_COND_V(r_config->negotiated ? r_config.id == -1 : r_config.id != -1, GODOT_ERR_INVALID_PARAMETER);
 	// Only one of maxRetransmits and maxRetransmitTime can be set on a channel.
-	ERR_FAIL_COND_V(r_config.maxRetransmits != -1 && r_config.maxRetransmitTime != -1, GODOT_ERR_INVALID_PARAMETER);
+	//ERR_FAIL_COND_V(r_config->maxRetransmits != 0xFFFF && r_config->maxPacketLifeTime != 0xFFFF, GODOT_ERR_INVALID_PARAMETER);
 	return GODOT_OK;
 }
 
+void _on_ice_candidate(UINT64 p_user, PCHAR p_candidate) {
+	RtcIceCandidateInit session;
+	memset(&session, 0, sizeof(session));
+	if (!p_candidate) {
+		return;
+	}
+	// TODO broken upstream?
+	deserializeRtcIceCandidateInit(p_candidate, strlen(p_candidate), &session);
+	godot::JSON *json = godot::JSON::get_singleton();
+	godot::Ref<godot::JSONParseResult> parsed = json->parse(godot::String(p_candidate));
+	godot::Variant result = parsed->get_result();
+	ERR_FAIL_COND(result.get_type() != godot::Variant::DICTIONARY);
+	godot::Dictionary dict = result;
+	ERR_FAIL_COND(!dict.has("candidate"));
+	ERR_FAIL_COND(!dict.has("sdpMLineIndex"));
+	ERR_FAIL_COND(!dict.has("sdpMid"));
+
+	godot::String sdp_candidate = dict["candidate"];
+	int sdp_mline = dict["sdpMLineIndex"];
+	godot::String sdp_mid = dict["sdpMid"];
+	((WebRTCLibPeerConnection *)p_user)->queue_signal("ice_candidate_created", 3, sdp_candidate, sdp_mline, sdp_mid);
+}
+
+void _on_data_channel(UINT64 p_user, RtcDataChannel *p_channel) {
+	WARN_PRINT("data channel received");
+	((WebRTCLibPeerConnection *)p_user)->queue_signal("data_channel_received", 1, WebRTCLibDataChannel::new_data_channel(p_channel));
+}
+
+void _on_connection_state_change(UINT64 p_user, RTC_PEER_CONNECTION_STATE p_state) {
+	WARN_PRINT("State: " + godot::String::num(p_state));
+}
+
 WebRTCLibPeerConnection::ConnectionState WebRTCLibPeerConnection::get_connection_state() const {
+#if 0
 	ERR_FAIL_COND_V(peer_connection.get() == nullptr, STATE_CLOSED);
 
 	webrtc::PeerConnectionInterface::IceConnectionState state = peer_connection->ice_connection_state();
@@ -83,81 +134,112 @@ WebRTCLibPeerConnection::ConnectionState WebRTCLibPeerConnection::get_connection
 		default:
 			return STATE_CLOSED;
 	}
+#endif
+	return STATE_CLOSED;
 }
 
 godot_error WebRTCLibPeerConnection::initialize(const godot_dictionary *p_config) {
-	webrtc::PeerConnectionInterface::RTCConfiguration config;
+	RtcConfiguration config;
+	memset(&config, 0, sizeof(config));
 	godot::Dictionary d = *(godot::Dictionary *)p_config;
 	godot::Variant v;
 	if (d.has("iceServers") && (v = d["iceServers"]) && v.get_type() == godot::Variant::ARRAY) {
 		godot::Array servers = v;
+		int urls = 0;
 		for (int i = 0; i < servers.size(); i++) {
 			v = servers[i];
 			ERR_FAIL_COND_V(v.get_type() != godot::Variant::DICTIONARY, GODOT_ERR_INVALID_PARAMETER);
 			godot_error err;
 			godot::Dictionary server = v;
-			err = _parse_ice_server(config, server);
+			err = _parse_ice_server(&config, server, &urls);
 			ERR_FAIL_COND_V(err != GODOT_OK, err);
 		}
 	}
-	return _create_pc(config);
+	return _create_pc(&config);
 }
 
 godot_object *WebRTCLibPeerConnection::create_data_channel(const char *p_channel, const godot_dictionary *p_channel_config) {
-	ERR_FAIL_COND_V(peer_connection.get() == nullptr, NULL);
+	ERR_FAIL_COND_V(!peer_connection, nullptr);
 
 	// Read config from dictionary
-	webrtc::DataChannelInit config;
+	RtcDataChannelInit config;
+	memset(&config, 0, sizeof(config));
 	godot::Dictionary d = *(godot::Dictionary *)p_channel_config;
-	godot_error err = _parse_channel_config(config, d);
-	ERR_FAIL_COND_V(err != GODOT_OK, NULL);
+	godot_error err = _parse_channel_config(&config, d);
+	ERR_FAIL_COND_V(err != GODOT_OK, nullptr);
 
-	WebRTCLibDataChannel *wrapper = WebRTCLibDataChannel::new_data_channel(peer_connection->CreateDataChannel(p_channel, &config));
-	ERR_FAIL_COND_V(wrapper == NULL, NULL);
+	RtcDataChannel *channel = nullptr;
+	STATUS status = createDataChannel(peer_connection, (char *)p_channel, &config, &channel);
+	ERR_FAIL_COND_V(status != STATUS_SUCCESS, nullptr);
+	WebRTCLibDataChannel *wrapper = WebRTCLibDataChannel::new_data_channel(channel);
+	ERR_FAIL_COND_V(!wrapper, nullptr);
 	return wrapper->_owner;
 }
 
 godot_error WebRTCLibPeerConnection::create_offer() {
-	ERR_FAIL_COND_V(peer_connection.get() == nullptr, GODOT_ERR_UNCONFIGURED);
-	peer_connection->CreateOffer(ptr_csdo, nullptr);
+	ERR_FAIL_COND_V(!peer_connection, GODOT_ERR_UNCONFIGURED);
+	RtcSessionDescriptionInit session;
+	memset(&session, 0, sizeof(session));
+	STATUS err = createOffer(peer_connection, &session);
+	if (err != STATUS_SUCCESS) {
+		ERR_PRINT("createOffer failed with error " + godot::String::num(err));
+		ERR_FAIL_V(GODOT_FAILED);
+	}
+	queue_signal("session_description_created", 2, "offer", godot::String(session.sdp));
 	return GODOT_OK;
 }
 
-#define _MAKE_DESC(TYPE, SDP) webrtc::CreateSessionDescription((godot::String(TYPE) == godot::String("offer") ? webrtc::SdpType::kOffer : webrtc::SdpType::kAnswer), SDP)
+#define _MAKE_DESC(TYPE, SDP) ERR_FAIL_COND_V(strlen(sdp) > MAX_SESSION_DESCRIPTION_INIT_SDP_LEN, GODOT_ERR_INVALID_PARAMETER); RtcSessionDescriptionInit session; memset(&session, 0, sizeof(session)); session.type = godot::String(TYPE) == "offer" ? SDP_TYPE_OFFER : SDP_TYPE_ANSWER; memcpy(session.sdp, SDP, strlen(sdp));
 godot_error WebRTCLibPeerConnection::set_remote_description(const char *type, const char *sdp) {
-	ERR_FAIL_COND_V(peer_connection.get() == nullptr, GODOT_ERR_UNCONFIGURED);
-	std::unique_ptr<webrtc::SessionDescriptionInterface> desc = _MAKE_DESC(type, sdp);
-	peer_connection->SetRemoteDescription(ptr_ssdo, desc.release());
-	peer_connection->CreateAnswer(ptr_csdo, webrtc::PeerConnectionInterface::RTCOfferAnswerOptions());
+	ERR_FAIL_COND_V(!peer_connection, GODOT_ERR_UNCONFIGURED);
+	_MAKE_DESC(type, sdp);
+	STATUS err = setRemoteDescription(peer_connection, &session);
+	if (err != STATUS_SUCCESS) {
+		ERR_PRINT("setRemoteDescription failed with error " + godot::String::num(err));
+		ERR_FAIL_V(GODOT_FAILED);
+	}
+	RtcSessionDescriptionInit answer;
+	memset(&answer, 0, sizeof(answer));
+	if (session.type != SDP_TYPE_OFFER) {
+		return GODOT_OK;
+	}
+	err = createAnswer(peer_connection, &answer);
+	if (err != STATUS_SUCCESS) {
+		ERR_PRINT("createAnser failed with error " + godot::String::num(err));
+		ERR_FAIL_V(GODOT_FAILED);
+	}
+	queue_signal("session_description_created", 2, "answer", godot::String(session.sdp));
 	return GODOT_OK;
 }
 
 godot_error WebRTCLibPeerConnection::set_local_description(const char *type, const char *sdp) {
-	ERR_FAIL_COND_V(peer_connection.get() == nullptr, GODOT_ERR_UNCONFIGURED);
-	std::unique_ptr<webrtc::SessionDescriptionInterface> desc = _MAKE_DESC(type, sdp);
-	peer_connection->SetLocalDescription(ptr_ssdo, desc.release());
+	ERR_FAIL_COND_V(!peer_connection, GODOT_ERR_UNCONFIGURED);
+	_MAKE_DESC(type, sdp);
+	STATUS err = setLocalDescription(peer_connection, &session);
+	if (err != STATUS_SUCCESS) {
+		ERR_PRINT("setLocalDescription failed with error " + godot::String::num(err));
+		ERR_FAIL_V(GODOT_FAILED);
+	}
 	return GODOT_OK;
 }
 #undef _MAKE_DESC
 
 godot_error WebRTCLibPeerConnection::add_ice_candidate(const char *sdpMidName, int sdpMlineIndexName, const char *sdpName) {
-	ERR_FAIL_COND_V(peer_connection.get() == nullptr, GODOT_ERR_UNCONFIGURED);
+	ERR_FAIL_COND_V(!peer_connection, GODOT_ERR_UNCONFIGURED);
 
-	webrtc::SdpParseError *error = nullptr;
-	webrtc::IceCandidateInterface *candidate = webrtc::CreateIceCandidate(
-			sdpMidName,
-			sdpMlineIndexName,
-			sdpName,
-			error);
-
-	ERR_FAIL_COND_V(error || !candidate, GODOT_ERR_INVALID_PARAMETER);
-	ERR_FAIL_COND_V(!peer_connection->AddIceCandidate(candidate), GODOT_FAILED);
-
+	WARN_PRINT(godot::String::num((uint64_t)this) + "> Adding candidate: " + godot::String(sdpMidName) + " " + godot::String::num(sdpMlineIndexName) + " " + godot::String(sdpName));
+	godot::Dictionary dict;
+	dict["candidate"] = godot::String(sdpMidName);
+	dict["sdpMid"] = godot::String(sdpName);
+	dict["sdpMLineIndex"] = sdpMlineIndexName;
+	godot::String config = dict.to_json();
+	STATUS err = addIceCandidate(peer_connection, (char *)config.utf8().get_data());
+	ERR_FAIL_COND_V(err != STATUS_SUCCESS, GODOT_FAILED);
 	return GODOT_OK;
 }
 
 godot_error WebRTCLibPeerConnection::poll() {
-	ERR_FAIL_COND_V(peer_connection.get() == nullptr, GODOT_ERR_UNCONFIGURED);
+	ERR_FAIL_COND_V(!peer_connection, GODOT_ERR_UNCONFIGURED);
 
 	std::function<void()> signal;
 	while (!signal_queue.empty()) {
@@ -172,10 +254,11 @@ godot_error WebRTCLibPeerConnection::poll() {
 }
 
 void WebRTCLibPeerConnection::close() {
-	if (peer_connection.get() != nullptr) {
-		peer_connection->Close();
+	if (peer_connection != nullptr) {
+		closePeerConnection(peer_connection);
+		freePeerConnection(&peer_connection);
+		peer_connection = nullptr;
 	}
-	peer_connection = nullptr;
 	while(!signal_queue.empty()) {
 		signal_queue.pop();
 	}
@@ -189,39 +272,25 @@ void WebRTCLibPeerConnection::_init() {
 
 	// initialize variables:
 	mutex_signal_queue = new std::mutex;
-
-	// create a PeerConnectionFactoryInterface:
-	signaling_thread = new rtc::Thread;
-	signaling_thread->Start();
-	pc_factory = webrtc::CreateModularPeerConnectionFactory(
-			nullptr, // rtc::Thread* network_thread,
-			nullptr, // rtc::Thread* worker_thread,
-			signaling_thread,
-			nullptr, // std::unique_ptr<cricket::MediaEngineInterface> media_engine,
-			nullptr, // std::unique_ptr<CallFactoryInterface> call_factory,
-			nullptr // std::unique_ptr<RtcEventLogFactoryInterface> event_log_factory
-	);
-
-	// Create peer connection with default configuration.
-	webrtc::PeerConnectionInterface::RTCConfiguration config;
-	_create_pc(config);
+	RtcConfiguration config;
+	memset(&config, 0, sizeof(config));
+	_create_pc(&config);
 }
 
-godot_error WebRTCLibPeerConnection::_create_pc(webrtc::PeerConnectionInterface::RTCConfiguration &config) {
-	ERR_FAIL_COND_V(pc_factory.get() == nullptr, GODOT_ERR_BUG);
-	peer_connection = nullptr;
-	peer_connection = pc_factory->CreatePeerConnection(config, nullptr, nullptr, &pco);
-	if (peer_connection.get() == nullptr) { // PeerConnection couldn't be created. Fail the method call.
-		ERR_PRINT("PeerConnection could not be created");
+godot_error WebRTCLibPeerConnection::_create_pc(RtcConfiguration *config) {
+	config->iceTransportPolicy = ICE_TRANSPORT_POLICY_ALL;
+	STATUS err = createPeerConnection(config, &peer_connection);
+	if (err != STATUS_SUCCESS) {
+		WARN_PRINT("Error creating PeerConnection: " + godot::String::num(err));
 		return GODOT_FAILED;
 	}
+	peerConnectionOnIceCandidate(peer_connection, (UINT64)this, _on_ice_candidate);
+	peerConnectionOnDataChannel(peer_connection, (UINT64)this, _on_data_channel);
+	peerConnectionOnConnectionStateChange(peer_connection, (UINT64)this, _on_connection_state_change);
 	return GODOT_OK;
 }
 
-WebRTCLibPeerConnection::WebRTCLibPeerConnection() :
-		pco(this),
-		ptr_csdo(new rtc::RefCountedObject<GodotCSDO>(this)),
-		ptr_ssdo(new rtc::RefCountedObject<GodotSSDO>(this)) {
+WebRTCLibPeerConnection::WebRTCLibPeerConnection() {
 }
 
 WebRTCLibPeerConnection::~WebRTCLibPeerConnection() {

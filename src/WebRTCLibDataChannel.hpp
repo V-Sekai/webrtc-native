@@ -3,12 +3,14 @@
 
 #include <Godot.hpp> // Godot.hpp must go first, or windows builds breaks
 
-#include "api/peerconnectioninterface.h" // interface for all things needed from WebRTC
-#include "media/base/mediaengine.h" // needed for CreateModularPeerConnectionFactory
+//#include "api/peerconnectioninterface.h" // interface for all things needed from WebRTC
+//#include "media/base/mediaengine.h" // needed for CreateModularPeerConnectionFactory
+#include <com/amazonaws/kinesis/video/webrtcclient/Include.h>
 
 #include "net/WebRTCDataChannelNative.hpp"
 #include "PoolArrays.hpp"
 #include <mutex>
+#include <queue>
 
 namespace godot_webrtc {
 
@@ -16,6 +18,7 @@ class WebRTCLibDataChannel : public WebRTCDataChannelNative {
 	GODOT_CLASS(WebRTCLibDataChannel, WebRTCDataChannelNative);
 
 private:
+#if 0
 	class ChannelObserver : public webrtc::DataChannelObserver {
 	public:
 		WebRTCLibDataChannel *parent;
@@ -28,20 +31,21 @@ private:
 
 	ChannelObserver observer;
 	rtc::scoped_refptr<webrtc::DataChannelInterface> channel;
+#endif
 
 	std::mutex *mutex;
 	std::queue<godot::PoolByteArray> packet_queue;
 	godot::PoolByteArray current_packet;
-	std::string label;
-	std::string protocol;
+	godot::String label;
+	RtcDataChannel *channel = nullptr;
 
 public:
-	static WebRTCLibDataChannel *new_data_channel(rtc::scoped_refptr<webrtc::DataChannelInterface> p_channel);
+	static WebRTCLibDataChannel *new_data_channel(RtcDataChannel *p_channel);
 	static void _register_methods();
 
 	void _init();
 
-	void bind_channel(rtc::scoped_refptr<webrtc::DataChannelInterface> p_channel);
+	void bind_channel(RtcDataChannel *p_channel);
 	void queue_packet(const uint8_t *data, uint32_t size);
 
 	/* WebRTCDataChannel */
