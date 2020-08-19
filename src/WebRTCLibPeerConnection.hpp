@@ -21,10 +21,13 @@ private:
 	std::mutex *mutex_signal_queue;
 	std::queue<std::function<void()> > signal_queue;
 	RtcPeerConnection *peer_connection = nullptr;
+	godot::Array candidates;
 
 	godot_error _create_pc(RtcConfiguration *config);
 
 public:
+	void queue_candidate(godot::String p_mid_name, int p_mline, godot::String p_candidate);
+	void emit_candidates();
 	static void _register_methods();
 
 	void _init();

@@ -83,6 +83,7 @@ void _on_ice_candidate(UINT64 p_user, PCHAR p_candidate) {
 	RtcIceCandidateInit session;
 	memset(&session, 0, sizeof(session));
 	if (!p_candidate) {
+		((WebRTCLibPeerConnection *)p_user)->emit_candidates();
 		return;
 	}
 	// TODO broken upstream?
@@ -99,7 +100,9 @@ void _on_ice_candidate(UINT64 p_user, PCHAR p_candidate) {
 	godot::String sdp_candidate = dict["candidate"];
 	int sdp_mline = dict["sdpMLineIndex"];
 	godot::String sdp_mid = dict["sdpMid"];
-	((WebRTCLibPeerConnection *)p_user)->queue_signal("ice_candidate_created", 3, sdp_candidate, sdp_mline, sdp_mid);
+	WARN_PRINT(godot::String(p_candidate));
+	((WebRTCLibPeerConnection *)p_user)->queue_candidate(sdp_mid, sdp_mline, sdp_candidate);
+	//((WebRTCLibPeerConnection *)p_user)->queue_signal("ice_candidate_created", 3, sdp_mid, sdp_mline, sdp_candidate);
 }
 
 void _on_data_channel(UINT64 p_user, RtcDataChannel *p_channel) {
@@ -109,6 +112,21 @@ void _on_data_channel(UINT64 p_user, RtcDataChannel *p_channel) {
 
 void _on_connection_state_change(UINT64 p_user, RTC_PEER_CONNECTION_STATE p_state) {
 	WARN_PRINT("State: " + godot::String::num(p_state));
+}
+
+void WebRTCLibPeerConnection::queue_candidate(godot::String p_mid_name, int p_mline, godot::String p_candidate) {
+	godot::Array data;
+	data.push_back(p_mid_name);
+	data.push_back(p_mline);
+	data.push_back(p_candidate);
+	candidates.push_back(data);
+}
+
+void WebRTCLibPeerConnection::emit_candidates() {
+	while (candidates.size()) {
+		godot::Array sdp = candidates.pop_front();
+		queue_signal("ice_candidate_created", 3, sdp[0], sdp[1], sdp[2]);
+	}
 }
 
 WebRTCLibPeerConnection::ConnectionState WebRTCLibPeerConnection::get_connection_state() const {
@@ -229,11 +247,17 @@ godot_error WebRTCLibPeerConnection::add_ice_candidate(const char *sdpMidName, i
 
 	WARN_PRINT(godot::String::num((uint64_t)this) + "> Adding candidate: " + godot::String(sdpMidName) + " " + godot::String::num(sdpMlineIndexName) + " " + godot::String(sdpName));
 	godot::Dictionary dict;
-	dict["candidate"] = godot::String(sdpMidName);
-	dict["sdpMid"] = godot::String(sdpName);
+	dict["candidate"] = godot::String(sdpName);
+	dict["sdpMid"] = godot::String(sdpMidName);
 	dict["sdpMLineIndex"] = sdpMlineIndexName;
-	godot::String config = dict.to_json();
-	STATUS err = addIceCandidate(peer_connection, (char *)config.utf8().get_data());
+	//godot::String config = dict.to_json();
+	godot::String config = "{\"candidate\":\"" + godot::String(sdpName) + "\",\"sdpMid\":\"" + godot::String::num(sdpMlineIndexName) + "\",\"sdpMLineIndex\":" + sdpMidName + "}";
+	WARN_PRINT(config);
+	RtcIceCandidateInit session;
+	ERR_FAIL_COND_V(deserializeRtcIceCandidateInit((char *)config.utf8().get_data(), config.utf8().length(), &session) != STATUS_SUCCESS, GODOT_ERR_INVALID_PARAMETER);
+
+	//STATUS err = addIceCandidate(peer_connection, (char *)config.utf8().get_data());
+	STATUS err = addIceCandidate(peer_connection, session.candidate);
 	ERR_FAIL_COND_V(err != STATUS_SUCCESS, GODOT_FAILED);
 	return GODOT_OK;
 }

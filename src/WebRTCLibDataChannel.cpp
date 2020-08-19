@@ -51,8 +51,8 @@ void WebRTCLibDataChannel::bind_channel(RtcDataChannel *p_channel) {
 
 	channel = p_channel;
 	label = godot::String(channel->name);
-	dataChannelOnOpen(p_channel, (UINT64)this, _on_channel_open);
-	dataChannelOnMessage(p_channel, (UINT64)this, _on_channel_message);
+	ERR_FAIL_COND(dataChannelOnOpen(p_channel, (UINT64)this, _on_channel_open) != STATUS_SUCCESS);
+	ERR_FAIL_COND(dataChannelOnMessage(p_channel, (UINT64)this, _on_channel_message) != STATUS_SUCCESS);
 #if 0
 	label = p_channel->label();
 	protocol = p_channel->protocol();
