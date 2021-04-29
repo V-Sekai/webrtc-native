@@ -40,6 +40,15 @@
 using namespace godot;
 using namespace godot_webrtc;
 
+void _on_channel_open(UINT64 p_user, RtcDataChannel *p_channel) {
+	WARN_PRINT("open!");
+}
+
+void _on_channel_message(UINT64 p_user, RtcDataChannel *p_channel, BOOL p_is_binary, PBYTE p_buffer, UINT32 p_buffer_size) {
+	WARN_PRINT("on message!");
+}
+
+#if 0
 // Channel observer
 WebRTCLibDataChannel::ChannelObserver::ChannelObserver(WebRTCLibDataChannel *parent) {
 	this->parent = parent;
@@ -54,9 +63,10 @@ void WebRTCLibDataChannel::ChannelObserver::OnStateChange() {
 
 void WebRTCLibDataChannel::ChannelObserver::OnBufferedAmountChange(uint64_t previous_amount) {
 }
+#endif
 
 // DataChannel
-WebRTCLibDataChannel *WebRTCLibDataChannel::new_data_channel(rtc::scoped_refptr<webrtc::DataChannelInterface> p_channel) {
+WebRTCLibDataChannel *WebRTCLibDataChannel::new_data_channel(RtcDataChannel *p_channel) {
 	// Invalid channel result in NULL return
 	ERR_FAIL_COND_V(p_channel.get() == nullptr, nullptr);
 
@@ -77,7 +87,6 @@ WebRTCLibDataChannel *WebRTCLibDataChannel::new_data_channel(rtc::scoped_refptr<
 	WebRTCLibDataChannel *out = memnew(WebRTCLibDataChannel());
 	out->bind_channel(p_channel);
 	return out;
-#endif
 }
 
 void WebRTCLibDataChannel::bind_channel(rtc::scoped_refptr<webrtc::DataChannelInterface> p_channel) {
@@ -87,6 +96,7 @@ void WebRTCLibDataChannel::bind_channel(rtc::scoped_refptr<webrtc::DataChannelIn
 	label = p_channel->label().c_str();
 	protocol = p_channel->protocol().c_str();
 	channel->RegisterObserver(&observer);
+#endif
 }
 
 void WebRTCLibDataChannel::queue_packet(const uint8_t *data, uint32_t size) {
@@ -204,8 +214,11 @@ int64_t WebRTCLibDataChannel::_get_max_packet_size() const {
 void WebRTCLibDataChannel::_register_methods() {
 }
 
-WebRTCLibDataChannel::WebRTCLibDataChannel() :
-		observer(this) {
+void WebRTCLibDataChannel::_init() {
+	register_interface(&interface);
+}
+
+WebRTCLibDataChannel::WebRTCLibDataChannel() {
 	mutex = new std::mutex;
 }
 

@@ -43,9 +43,12 @@ using WebRTCPeerConnectionExtension = WebRTCPeerConnectionNative;
 #include <godot_cpp/classes/web_rtc_peer_connection_extension.hpp>
 #endif
 
-#include "api/peer_connection_interface.h" // interface for all things needed from WebRTC
-#include "media/base/media_engine.h" // needed for CreateModularPeerConnectionFactory
-#include <mutex>
+//#include "api/peerconnectioninterface.h" // interface for all things needed from WebRTC
+//#include "media/base/mediaengine.h" // needed for CreateModularPeerConnectionFactory
+#include <functional> // std::function
+#include <mutex> // mutex @TODO replace std::mutex with Godot mutex
+#include <queue>
+#include <com/amazonaws/kinesis/video/webrtcclient/Include.h>
 
 namespace godot_webrtc {
 
@@ -88,6 +91,7 @@ private:
 	void queue_signal(godot::String p_name, int p_argc, const godot::Variant &p_arg1 = godot::Variant(), const godot::Variant &p_arg2 = godot::Variant(), const godot::Variant &p_arg3 = godot::Variant());
 	void queue_packet(uint8_t *, int);
 
+#if 0
 	/** PeerConnectionObserver callback functions **/
 	class GodotPCO : public webrtc::PeerConnectionObserver {
 	public:
@@ -168,6 +172,7 @@ private:
 
 	rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> pc_factory;
 	rtc::scoped_refptr<webrtc::PeerConnectionInterface> peer_connection;
+#endif
 };
 
 } // namespace godot_webrtc

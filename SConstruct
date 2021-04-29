@@ -23,12 +23,9 @@ def add_sources(sources, dirpath, extension):
 
 def gen_gdnative_lib(target, source, env):
     for t in target:
-        with open(t.srcnode().path, "w") as w:
-            w.write(
-                decode_utf8(source[0].get_contents())
-                .replace("{GDNATIVE_PATH}", os.path.splitext(t.name)[0])
-                .replace("{TARGET}", env["target"])
-            )
+        with open(t.srcnode().path, 'w') as w:
+            content = source[0].get_contents().decode()
+            w.write(content.replace('{GDNATIVE_PATH}', os.path.splitext(t.name)[0]).replace('{TARGET}', env['target']))
 
 
 env = Environment()
@@ -311,12 +308,16 @@ if target == "debug":
 else:
     lib_path += "/Release"
 
-env.Append(CPPPATH=[webrtc_dir + "/include", webrtc_dir + "/include/third_party/abseil-cpp"])
+kinesis_libs = ['libkvspic', 'libcrypto', 'libssl', 'libusrsctp', 'libsrtp2', 'libkvsWebrtcClient', 'libkvspicState', 'libkvspicUtils']
+kinesis_libs.reverse()
+
+#env.Append(CPPPATH=[webrtc_dir + "/include"])
+env.Append(CPPPATH=['kinesis' + "/include"])
 
 if target_platform == "linux":
-    env.Append(LIBPATH=[lib_path])
-    env.Append(CCFLAGS=["-DWEBRTC_POSIX", "-DWEBRTC_LINUX"])
-    env.Append(CCFLAGS=["-DRTC_UNUSED=''", "-DNO_RETURN=''"])
+    env.Append(LIBS=kinesis_libs)
+    env.Append(LIBPATH=[lib_path, lib_path.replace('webrtc/', 'kinesis/')])
+    env.Append(CCFLAGS=["-std=c++11"])
 
 elif target_platform == "windows":
     # Mostly VisualStudio

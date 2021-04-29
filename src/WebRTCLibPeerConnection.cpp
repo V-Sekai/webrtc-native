@@ -31,9 +31,13 @@
 #include "WebRTCLibPeerConnection.hpp"
 #include "WebRTCLibDataChannel.hpp"
 
+#include "JSON.hpp"
+#include "JSONParseResult.hpp"
+
 using namespace godot;
 using namespace godot_webrtc;
 
+	int cur = *r_pos;
 #ifdef GDNATIVE_WEBRTC
 #define MK_ERROR(m_err)                 \
 	struct Castable##m_err {            \
@@ -121,7 +125,6 @@ Error WebRTCLibPeerConnection::_parse_ice_server(webrtc::PeerConnectionInterface
 	Variant v;
 	webrtc::PeerConnectionInterface::IceServer ice_server;
 	String url;
-
 	ERR_FAIL_COND_V(!p_server.has("urls"), ERR_INVALID_PARAMETER);
 
 	// Parse mandatory URL
@@ -129,6 +132,13 @@ Error WebRTCLibPeerConnection::_parse_ice_server(webrtc::PeerConnectionInterface
 	v = DICT_GET(p_server, "urls");
 	if (v.get_type() == Variant::STRING) {
 		url = v;
+		url_size = url.utf8().length();
+		ERR_FAIL_COND_V(url_size > MAX_ICE_CONFIG_URI_LEN, GODOT_ERR_INVALID_PARAMETER);
+		memcpy(r_config->iceServers[cur].urls, url.utf8().get_data(), url_size);
+		cur++;
+	} else if (v.get_type() == godot::Variant::ARRAY) {
+		godot::Array names = v;
+		ERR_FAIL_COND_V(cur + names.size() >= MAX_ICE_SERVERS_COUNT, GODOT_ERR_INVALID_PARAMETER);
 		ice_server.urls.push_back(url.utf8().get_data());
 	} else if (v.get_type() == Variant::ARRAY) {
 		Array names = v;
@@ -136,11 +146,17 @@ Error WebRTCLibPeerConnection::_parse_ice_server(webrtc::PeerConnectionInterface
 			v = names[j];
 			ERR_FAIL_COND_V(v.get_type() != Variant::STRING, ERR_INVALID_PARAMETER);
 			url = v;
-			ice_server.urls.push_back(url.utf8().get_data());
+			url_size = url.utf8().length();
+			ERR_FAIL_COND_V(url_size > MAX_ICE_CONFIG_URI_LEN, GODOT_ERR_INVALID_PARAMETER);
+			memcpy(r_config->iceServers[cur].urls, url.utf8().get_data(), url_size);
+			cur++;
 		}
 	} else {
 		ERR_FAIL_V(ERR_INVALID_PARAMETER);
 	}
+	*r_pos = cur;
+
+#if 0
 	// Parse credentials (only meaningful for TURN, only support password)
 	if (p_server.has("username") && (v = DICT_GET(p_server, "username")) && v.get_type() == Variant::STRING) {
 		ice_server.username = (v.operator String()).utf8().get_data();
@@ -151,6 +167,7 @@ Error WebRTCLibPeerConnection::_parse_ice_server(webrtc::PeerConnectionInterface
 
 	r_config.servers.push_back(ice_server);
 	return OK;
+#endif
 }
 
 Error WebRTCLibPeerConnection::_parse_channel_config(webrtc::DataChannelInit &r_config, const Dictionary &p_dict) {
@@ -163,9 +180,10 @@ Error WebRTCLibPeerConnection::_parse_channel_config(webrtc::DataChannelInit &r_
 			r_config.PNAME = v;            \
 	}
 #define _SET(PROP, TYPE) _SET_N(PROP, PROP, TYPE)
+	// FIXME not supported!
 	_SET(negotiated, BOOL);
-	_SET(id, INT);
-	_SET_N(maxPacketLifeTime, maxRetransmitTime, INT);
+	//_SET(id, INT);
+	_SET(maxPacketLifeTime, INT);
 	_SET(maxRetransmits, INT);
 	_SET(ordered, BOOL);
 #undef _SET
@@ -202,6 +220,7 @@ int64_t WebRTCLibPeerConnection::_get_connection_state() const {
 		default:
 			return STATE_CLOSED;
 	}
+#endif
 }
 
 int64_t WebRTCLibPeerConnection::_initialize(const Dictionary &p_config) {
