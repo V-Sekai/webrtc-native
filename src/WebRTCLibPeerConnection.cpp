@@ -80,13 +80,12 @@ godot_error _parse_channel_config(RtcDataChannelInit *r_config, godot::Dictionar
 }
 
 void _on_ice_candidate(UINT64 p_user, PCHAR p_candidate) {
-	RtcIceCandidateInit session;
-	memset(&session, 0, sizeof(session));
 	if (!p_candidate) {
-		((WebRTCLibPeerConnection *)p_user)->emit_candidates();
 		return;
 	}
-	// TODO broken upstream?
+	RtcIceCandidateInit session;
+	memset(&session, 0, sizeof(session));
+	WARN_PRINT(godot::String(p_candidate));
 	deserializeRtcIceCandidateInit(p_candidate, strlen(p_candidate), &session);
 	godot::JSON *json = godot::JSON::get_singleton();
 	godot::Ref<godot::JSONParseResult> parsed = json->parse(godot::String(p_candidate));
@@ -100,9 +99,7 @@ void _on_ice_candidate(UINT64 p_user, PCHAR p_candidate) {
 	godot::String sdp_candidate = dict["candidate"];
 	int sdp_mline = dict["sdpMLineIndex"];
 	godot::String sdp_mid = dict["sdpMid"];
-	WARN_PRINT(godot::String(p_candidate));
-	((WebRTCLibPeerConnection *)p_user)->queue_candidate(sdp_mid, sdp_mline, sdp_candidate);
-	//((WebRTCLibPeerConnection *)p_user)->queue_signal("ice_candidate_created", 3, sdp_mid, sdp_mline, sdp_candidate);
+	((WebRTCLibPeerConnection *)p_user)->queue_signal("ice_candidate_created", 3, sdp_mid, sdp_mline, sdp_candidate);
 }
 
 void _on_data_channel(UINT64 p_user, RtcDataChannel *p_channel) {
@@ -244,20 +241,19 @@ godot_error WebRTCLibPeerConnection::set_local_description(const char *type, con
 
 godot_error WebRTCLibPeerConnection::add_ice_candidate(const char *sdpMidName, int sdpMlineIndexName, const char *sdpName) {
 	ERR_FAIL_COND_V(!peer_connection, GODOT_ERR_UNCONFIGURED);
+	WARN_PRINT(godot::String::num((uint64_t)this));
 
-	WARN_PRINT(godot::String::num((uint64_t)this) + "> Adding candidate: " + godot::String(sdpMidName) + " " + godot::String::num(sdpMlineIndexName) + " " + godot::String(sdpName));
 	godot::Dictionary dict;
 	dict["candidate"] = godot::String(sdpName);
 	dict["sdpMid"] = godot::String(sdpMidName);
 	dict["sdpMLineIndex"] = sdpMlineIndexName;
-	//godot::String config = dict.to_json();
 	godot::String config = "{\"candidate\":\"" + godot::String(sdpName) + "\",\"sdpMid\":\"" + godot::String::num(sdpMlineIndexName) + "\",\"sdpMLineIndex\":" + sdpMidName + "}";
 	WARN_PRINT(config);
 	RtcIceCandidateInit session;
-	ERR_FAIL_COND_V(deserializeRtcIceCandidateInit((char *)config.utf8().get_data(), config.utf8().length(), &session) != STATUS_SUCCESS, GODOT_ERR_INVALID_PARAMETER);
+	STATUS err = deserializeRtcIceCandidateInit((char *)config.utf8().get_data(), config.utf8().length(), &session);
+	ERR_FAIL_COND_V(err != STATUS_SUCCESS, GODOT_ERR_INVALID_PARAMETER);
 
-	//STATUS err = addIceCandidate(peer_connection, (char *)config.utf8().get_data());
-	STATUS err = addIceCandidate(peer_connection, session.candidate);
+	err = addIceCandidate(peer_connection, session.candidate);
 	ERR_FAIL_COND_V(err != STATUS_SUCCESS, GODOT_FAILED);
 	return GODOT_OK;
 }
@@ -292,6 +288,7 @@ void WebRTCLibPeerConnection::_register_methods() {
 }
 
 void WebRTCLibPeerConnection::_init() {
+	WARN_PRINT(godot::String::num((uint64_t)this));
 	register_interface(&interface);
 
 	// initialize variables:
@@ -302,15 +299,17 @@ void WebRTCLibPeerConnection::_init() {
 }
 
 godot_error WebRTCLibPeerConnection::_create_pc(RtcConfiguration *config) {
-	config->iceTransportPolicy = ICE_TRANSPORT_POLICY_ALL;
 	STATUS err = createPeerConnection(config, &peer_connection);
 	if (err != STATUS_SUCCESS) {
 		WARN_PRINT("Error creating PeerConnection: " + godot::String::num(err));
 		return GODOT_FAILED;
 	}
-	peerConnectionOnIceCandidate(peer_connection, (UINT64)this, _on_ice_candidate);
-	peerConnectionOnDataChannel(peer_connection, (UINT64)this, _on_data_channel);
-	peerConnectionOnConnectionStateChange(peer_connection, (UINT64)this, _on_connection_state_change);
+	err = peerConnectionOnIceCandidate(peer_connection, (UINT64)this, _on_ice_candidate);
+	ERR_FAIL_COND_V(err, GODOT_FAILED);
+	err = peerConnectionOnDataChannel(peer_connection, (UINT64)this, _on_data_channel);
+	ERR_FAIL_COND_V(err, GODOT_FAILED);
+	err = peerConnectionOnConnectionStateChange(peer_connection, (UINT64)this, _on_connection_state_change);
+	ERR_FAIL_COND_V(err, GODOT_FAILED);
 	return GODOT_OK;
 }
 

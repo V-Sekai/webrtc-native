@@ -70,6 +70,7 @@ extern "C" void GDN_EXPORT godot_gdnative_singleton() {
 
 /* Godot export stuff */
 extern "C" void GDN_EXPORT godot_gdnative_init(godot_gdnative_init_options *o) {
+	printf("======================== Init!!!!!!!!");
 	initKvsWebRtc();
 	const godot_gdnative_core_api_struct *api = o->api_struct;
 	for (int i = 0; i < api->num_extensions; i++) {
