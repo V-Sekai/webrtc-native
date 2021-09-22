@@ -30,9 +30,7 @@
 
 #include "WebRTCLibDataChannel.hpp"
 
-#include "GDNativeLibrary.hpp"
-#include "NativeScript.hpp"
-
+using namespace godot;
 using namespace godot_webrtc;
 
 // Channel observer
@@ -53,21 +51,11 @@ void WebRTCLibDataChannel::ChannelObserver::OnBufferedAmountChange(uint64_t prev
 // DataChannel
 WebRTCLibDataChannel *WebRTCLibDataChannel::new_data_channel(rtc::scoped_refptr<webrtc::DataChannelInterface> p_channel) {
 	// Invalid channel result in NULL return
-	ERR_FAIL_COND_V(p_channel.get() == nullptr, NULL);
+	ERR_FAIL_COND_V(p_channel.get() == nullptr, nullptr);
 
-	// Instance a WebRTCDataChannelGDNative object
-	godot::WebRTCDataChannelGDNative *out = godot::WebRTCDataChannelGDNative::_new();
-	// Set our implementation as it's script
-	godot::NativeScript *script = godot::NativeScript::_new();
-	script->set_library(godot::detail::get_wrapper<godot::GDNativeLibrary>((godot_object *)godot::gdnlib));
-	script->set_class_name("WebRTCLibDataChannel");
-	out->set_script(script);
-
-	// Bind the data channel to the ScriptInstance userdata (our script)
-	WebRTCLibDataChannel *tmp = out->cast_to<WebRTCLibDataChannel>(out);
-	tmp->bind_channel(p_channel);
-
-	return tmp;
+	WebRTCLibDataChannel *out = memnew(WebRTCLibDataChannel());
+	out->bind_channel(p_channel);
+	return out;
 }
 
 void WebRTCLibDataChannel::bind_channel(rtc::scoped_refptr<webrtc::DataChannelInterface> p_channel) {
@@ -82,85 +70,88 @@ void WebRTCLibDataChannel::bind_channel(rtc::scoped_refptr<webrtc::DataChannelIn
 void WebRTCLibDataChannel::queue_packet(const uint8_t *data, uint32_t size) {
 	mutex->lock();
 
-	godot::PoolByteArray packet;
-	packet.resize(size);
-	{
-		godot::PoolByteArray::Write w = packet.write();
-		memcpy(w.ptr(), data, size);
-	}
+	// TODO FIXME
+	WARN_PRINT("This should do something!");
+	godot::PackedByteArray packet;
+	//packet.resize(size);
+	//{
+	//	godot::PackedByteArray::Write w = packet.write();
+	//	memcpy(w.ptr(), data, size);
+	//}
 	packet_queue.push(packet);
 
 	mutex->unlock();
 }
 
-void WebRTCLibDataChannel::set_write_mode(godot_int mode) {
+void WebRTCLibDataChannel::_set_write_mode(int64_t mode) {
 }
 
-godot_int WebRTCLibDataChannel::get_write_mode() const {
+int64_t WebRTCLibDataChannel::_get_write_mode() const {
 	return 0;
 }
 
-bool WebRTCLibDataChannel::was_string_packet() const {
+bool WebRTCLibDataChannel::_was_string_packet() const {
 	return false;
 }
 
-WebRTCLibDataChannel::ChannelState WebRTCLibDataChannel::get_ready_state() const {
+int64_t WebRTCLibDataChannel::_get_ready_state() const {
 	ERR_FAIL_COND_V(channel.get() == nullptr, STATE_CLOSED);
-	return (ChannelState)channel->state();
+	return channel->state();
 }
 
-const char *WebRTCLibDataChannel::get_label() const {
+godot::String WebRTCLibDataChannel::_get_label() const {
 	ERR_FAIL_COND_V(channel.get() == nullptr, "");
 	return label.c_str();
 }
 
-bool WebRTCLibDataChannel::is_ordered() const {
+bool WebRTCLibDataChannel::_is_ordered() const {
 	ERR_FAIL_COND_V(channel.get() == nullptr, false);
 	return channel->ordered();
 }
 
-int WebRTCLibDataChannel::get_id() const {
+int64_t WebRTCLibDataChannel::_get_id() const {
 	ERR_FAIL_COND_V(channel.get() == nullptr, -1);
 	return channel->id();
 }
 
-int WebRTCLibDataChannel::get_max_packet_life_time() const {
+int64_t WebRTCLibDataChannel::_get_max_packet_life_time() const {
 	ERR_FAIL_COND_V(channel.get() == nullptr, 0);
 	return channel->maxRetransmitTime();
 }
 
-int WebRTCLibDataChannel::get_max_retransmits() const {
+int64_t WebRTCLibDataChannel::_get_max_retransmits() const {
 	ERR_FAIL_COND_V(channel.get() == nullptr, 0);
 	return channel->maxRetransmits();
 }
 
-const char *WebRTCLibDataChannel::get_protocol() const {
+godot::String WebRTCLibDataChannel::_get_protocol() const {
 	ERR_FAIL_COND_V(channel.get() == nullptr, "");
 	return protocol.c_str();
 }
 
-bool WebRTCLibDataChannel::is_negotiated() const {
+bool WebRTCLibDataChannel::_is_negotiated() const {
 	ERR_FAIL_COND_V(channel.get() == nullptr, false);
 	return channel->negotiated();
 }
 
-int WebRTCLibDataChannel::get_buffered_amount() const {
+int64_t WebRTCLibDataChannel::_get_buffered_amount() const {
 	ERR_FAIL_COND_V(channel.get() == nullptr, 0);
 	return channel->buffered_amount();
 }
 
-godot_error WebRTCLibDataChannel::poll() {
-	return GODOT_OK;
+int64_t WebRTCLibDataChannel::_poll() {
+	return 0;
 }
 
-void WebRTCLibDataChannel::close() {
+void WebRTCLibDataChannel::_close() {
 	if (channel.get() != nullptr) {
 		channel->Close();
 		channel->UnregisterObserver();
 	}
 }
 
-godot_error WebRTCLibDataChannel::get_packet(const uint8_t **r_buffer, int *r_len) {
+#if 0
+int64_t WebRTCLibDataChannel::_get_packet(const uint8_t **r_buffer, int *r_len) {
 	ERR_FAIL_COND_V(packet_queue.empty(), GODOT_ERR_UNAVAILABLE);
 
 	mutex->lock();
@@ -174,31 +165,28 @@ godot_error WebRTCLibDataChannel::get_packet(const uint8_t **r_buffer, int *r_le
 
 	mutex->unlock();
 
-	return GODOT_OK;
+	return 0;
 }
 
-godot_error WebRTCLibDataChannel::put_packet(const uint8_t *p_buffer, int p_len) {
+int64_t WebRTCLibDataChannel::_put_packet(const uint8_t *p_buffer, int p_len) {
 	ERR_FAIL_COND_V(channel.get() == nullptr, GODOT_ERR_UNAVAILABLE);
 
 	webrtc::DataBuffer webrtc_buffer(rtc::CopyOnWriteBuffer(p_buffer, p_len), true);
 	ERR_FAIL_COND_V(!channel->Send(webrtc_buffer), GODOT_FAILED);
 
-	return GODOT_OK;
+	return 0;
 }
+#endif
 
-godot_int WebRTCLibDataChannel::get_available_packet_count() const {
+int64_t WebRTCLibDataChannel::_get_available_packet_count() const {
 	return packet_queue.size();
 }
 
-godot_int WebRTCLibDataChannel::get_max_packet_size() const {
+int64_t WebRTCLibDataChannel::_get_max_packet_size() const {
 	return 1200;
 }
 
 void WebRTCLibDataChannel::_register_methods() {
-}
-
-void WebRTCLibDataChannel::_init() {
-	register_interface(&interface);
 }
 
 WebRTCLibDataChannel::WebRTCLibDataChannel() :
@@ -208,8 +196,5 @@ WebRTCLibDataChannel::WebRTCLibDataChannel() :
 
 WebRTCLibDataChannel::~WebRTCLibDataChannel() {
 	close();
-	if (_owner) {
-		register_interface(NULL);
-	}
 	delete mutex;
 }

@@ -89,7 +89,7 @@ elif target_platform == "ios":
 host_platform = platform.system()
 # Local dependency paths, adapt them to your setup
 godot_headers = env["godot_headers"]
-godot_cpp_headers = os.path.join(env["godot_cpp"], "include")
+godot_cpp = env["godot_cpp"]
 godot_cpp_lib_dir = os.path.join(env["godot_cpp"], "bin")
 result_path = os.path.join("bin", "webrtc" if env["target"] == "release" else "webrtc_debug", "lib")
 lib_prefix = ""
@@ -114,7 +114,7 @@ if target_platform == "linux":
     else:
         env.Prepend(CCFLAGS=["-O3"])
 
-    env.Append(CCFLAGS=["-fPIC", "-std=c++14"])
+    env.Append(CCFLAGS=["-fPIC", "-std=c++17"])
 
     if target_arch == "32":
         env.Append(CCFLAGS=["-m32"])
@@ -145,7 +145,7 @@ elif target_platform == "windows":
         elif env["target"] == "release":
             env.Append(CCFLAGS=["-O3"])
 
-        env.Append(CCFLAGS=["-std=c++14", "-Wwrite-strings"])
+        env.Append(CCFLAGS=["-std=c++17", "-Wwrite-strings"])
         env.Append(LINKFLAGS=["--static", "-Wl,--no-undefined", "-static-libgcc", "-static-libstdc++"])
 
 elif target_platform == "osx":
@@ -157,7 +157,7 @@ elif target_platform == "osx":
     if env["macos_arch"] != "x86_64":
         target_arch = "arm64"
 
-    env.Append(CCFLAGS=["-std=c++14", "-arch", env["macos_arch"]])
+    env.Append(CCFLAGS=["-std=c++17", "-arch", env["macos_arch"]])
     env.Append(LINKFLAGS=["-arch", env["macos_arch"], "-framework", "Cocoa", "-Wl,-undefined,dynamic_lookup"])
 
     if env["macos_sdk_path"]:
@@ -191,7 +191,7 @@ elif target_platform == "ios":
     env["AR"] = compiler_path + "ar"
     env["RANLIB"] = compiler_path + "ranlib"
 
-    env.Append(CCFLAGS=["-std=c++14", "-arch", env["ios_arch"], "-isysroot", sdk_path])
+    env.Append(CCFLAGS=["-std=c++17", "-arch", env["ios_arch"], "-isysroot", sdk_path])
     env.Append(
         LINKFLAGS=["-arch", env["ios_arch"], "-Wl,-undefined,dynamic_lookup", "-isysroot", sdk_path, "-F" + sdk_path]
     )
@@ -283,7 +283,7 @@ else:
 
 # Godot CPP bindings
 env.Append(CPPPATH=[godot_headers])
-env.Append(CPPPATH=[godot_cpp_headers, godot_cpp_headers + "/core", godot_cpp_headers + "/gen"])
+env.Append(CPPPATH=[godot_cpp + "/include", godot_cpp + "/gen/include"])
 env.Append(LIBPATH=[godot_cpp_lib_dir])
 env.Append(
     LIBS=[
@@ -317,7 +317,6 @@ env.Append(CPPPATH=[webrtc_dir + "/include", webrtc_dir + "/include/third_party/
 if target_platform == "linux":
     env.Append(LIBS=[lib_name, "atomic"])
     env.Append(LIBPATH=[lib_path])
-    # env.Append(CCFLAGS=["-std=c++11"])
     env.Append(CCFLAGS=["-DWEBRTC_POSIX", "-DWEBRTC_LINUX"])
     env.Append(CCFLAGS=["-DRTC_UNUSED=''", "-DNO_RETURN=''"])
 
@@ -370,8 +369,10 @@ elif target_platform == "android":
 # Our includes and sources
 env.Append(CPPPATH=["src/"])
 sources = []
-add_sources(sources, "src/", "cpp")
-add_sources(sources, "src/net/", "cpp")
+sources.append("src/init.cpp")
+sources.append("src/WebRTCLibDataChannel.cpp")
+#add_sources(sources, "src/", "cpp")
+#add_sources(sources, "src/net/", "cpp")
 
 # Suffix
 suffix = ".%s.%s" % (target, target_arch)
