@@ -74,8 +74,8 @@ public:
 	void queue_packet(const uint8_t *data, uint32_t size);
 
 	/* PacketPeer */
-	//virtual int64_t _get_packet(const uint8_t **r_buffer, int *r_len);
-	//virtual int64_t _put_packet(const uint8_t *p_buffer, int p_len);
+	virtual int64_t _get_packet(const uint8_t **r_buffer, int32_t *r_len);
+	virtual int64_t _put_packet(const uint8_t *p_buffer, int p_len);
 	virtual int64_t _get_available_packet_count() const;
 	virtual int64_t _get_max_packet_size() const;
 
