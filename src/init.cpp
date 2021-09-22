@@ -71,7 +71,7 @@ godot_error create_peer_connection_wp(godot_object *out) {
 }
 
 godot_net_webrtc_library library = {
-	{ 3, 2 },
+	{ 3, 4 },
 	&unregistered,
 	&create_peer_connection_wp,
 	NULL,
