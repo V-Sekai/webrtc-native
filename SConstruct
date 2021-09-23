@@ -371,6 +371,7 @@ env.Append(CPPPATH=["src/"])
 sources = []
 sources.append("src/init.cpp")
 sources.append("src/WebRTCLibDataChannel.cpp")
+sources.append("src/WebRTCLibPeerConnection.cpp")
 #add_sources(sources, "src/", "cpp")
 #add_sources(sources, "src/net/", "cpp")
 

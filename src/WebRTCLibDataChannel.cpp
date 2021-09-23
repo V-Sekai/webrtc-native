@@ -146,7 +146,7 @@ void WebRTCLibDataChannel::_close() {
 }
 
 int64_t WebRTCLibDataChannel::_get_packet(const uint8_t **r_buffer, int32_t *r_len) {
-	ERR_FAIL_COND_V(packet_queue.empty(), 1);
+	ERR_FAIL_COND_V(packet_queue.empty(), GODOT_ERR_UNAVAILABLE);
 
 	mutex->lock();
 
@@ -163,10 +163,10 @@ int64_t WebRTCLibDataChannel::_get_packet(const uint8_t **r_buffer, int32_t *r_l
 }
 
 int64_t WebRTCLibDataChannel::_put_packet(const uint8_t *p_buffer, int p_len) {
-	ERR_FAIL_COND_V(channel.get() == nullptr, 1);
+	ERR_FAIL_COND_V(channel.get() == nullptr, GODOT_ERR_UNAVAILABLE);
 
 	webrtc::DataBuffer webrtc_buffer(rtc::CopyOnWriteBuffer(p_buffer, p_len), true);
-	ERR_FAIL_COND_V(!channel->Send(webrtc_buffer), 1);
+	ERR_FAIL_COND_V(!channel->Send(webrtc_buffer), GODOT_FAILED);
 
 	return 0;
 }

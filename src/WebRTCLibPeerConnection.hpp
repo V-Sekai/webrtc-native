@@ -31,47 +31,48 @@
 #ifndef WEBRTC_PEER_H
 #define WEBRTC_PEER_H
 
-#include <Godot.hpp> // Godot.hpp must go first, or windows builds breaks
-
 #include "api/peer_connection_interface.h" // interface for all things needed from WebRTC
 #include "media/base/media_engine.h" // needed for CreateModularPeerConnectionFactory
 #include <mutex>
 
-#include "net/WebRTCPeerConnectionNative.hpp"
+#include <godot_cpp/classes/web_rtc_peer_connection_extension.hpp>
 
 namespace godot_webrtc {
 
-class WebRTCLibPeerConnection : public WebRTCPeerConnectionNative {
-	GODOT_CLASS(WebRTCLibPeerConnection, WebRTCPeerConnectionNative);
+class WebRTCLibPeerConnection : public godot::WebRTCPeerConnectionExtension {
+	GDCLASS(WebRTCLibPeerConnection, WebRTCPeerConnectionExtension);
 
 private:
-	godot_error _create_pc(webrtc::PeerConnectionInterface::RTCConfiguration &config);
+	int64_t _create_pc(webrtc::PeerConnectionInterface::RTCConfiguration &config);
 
 	static std::unique_ptr<rtc::Thread> signaling_thread;
 
+protected:
+	static void _bind_methods() {}
+
 public:
-	static void _register_methods();
+	static void _register_methods() {}
 	static void initialize_signaling();
 	static void deinitialize_signaling();
 
 	void _init();
 
-	ConnectionState get_connection_state() const;
+	int64_t _get_connection_state() const;
 
-	godot_error initialize(const godot_dictionary *p_config);
-	godot_object *create_data_channel(const char *p_channel, const godot_dictionary *p_channel_config);
-	godot_error create_offer();
-	godot_error set_remote_description(const char *type, const char *sdp);
-	godot_error set_local_description(const char *type, const char *sdp);
-	godot_error add_ice_candidate(const char *sdpMidName, int sdpMlineIndexName, const char *sdpName);
-	godot_error poll();
-	void close();
+	int64_t _initialize(const godot::Dictionary &p_config) override;
+	godot::Object *_create_data_channel(const godot::String &p_channel, const godot::Dictionary &p_channel_config) override;
+	int64_t _create_offer() override;
+	int64_t _set_remote_description(const godot::String &type, const godot::String &sdp) override;
+	int64_t _set_local_description(const godot::String &type, const godot::String &sdp) override;
+	int64_t _add_ice_candidate(const godot::String &sdpMidName, int64_t sdpMlineIndexName, const godot::String &sdpName) override;
+	int64_t _poll() override;
+	void _close() override;
 
 	WebRTCLibPeerConnection();
 	~WebRTCLibPeerConnection();
 
-	/* helper functions */
 private:
+	/* helper functions */
 	void queue_signal(godot::String p_name, int p_argc, const godot::Variant &p_arg1 = godot::Variant(), const godot::Variant &p_arg2 = godot::Variant(), const godot::Variant &p_arg3 = godot::Variant());
 	void queue_packet(uint8_t *, int);
 
@@ -103,9 +104,7 @@ private:
 			parent = p_parent;
 		}
 		void OnSuccess(webrtc::SessionDescriptionInterface *desc) override;
-		void OnFailure(webrtc::RTCError error) override {
-			ERR_PRINT(godot::String(error.message()));
-		}
+		void OnFailure(webrtc::RTCError error) override;
 	};
 
 	/** SetSessionDescriptionObserver callback functions **/
@@ -118,10 +117,7 @@ private:
 			parent = p_parent;
 		}
 		void OnSuccess() override;
-		void OnFailure(webrtc::RTCError error) override {
-			make_offer = false;
-			ERR_PRINT(godot::String(error.message()));
-		}
+		void OnFailure(webrtc::RTCError error) override;
 	};
 
 	class Signal {

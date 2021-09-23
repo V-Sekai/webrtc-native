@@ -33,24 +33,24 @@
 #include <godot_cpp/godot.hpp>
 
 #include "WebRTCLibDataChannel.hpp"
-//#include "WebRTCLibPeerConnection.hpp"
+#include "WebRTCLibPeerConnection.hpp"
 
 using namespace godot;
 using namespace godot_webrtc;
 
 void register_webrtc_extension_types() {
 	ClassDB::register_class<WebRTCLibDataChannel>();
-	//ClassDB::register_class<WebRTCLibPeerConnection>();
-	//godot_webrtc::WebRTCLibPeerConnection::initialize_signaling();
+	ClassDB::register_class<WebRTCLibPeerConnection>();
+	WebRTCLibPeerConnection::initialize_signaling();
 }
 
 void unregister_webrtc_extension_types() {
-	//godot_webrtc::WebRTCLibPeerConnection::deinitialize_signaling();
+	WebRTCLibPeerConnection::deinitialize_signaling();
 }
 
 extern "C" {
 GDNativeBool GDN_EXPORT webrtc_extension_init(const GDNativeInterface *p_interface, const GDNativeExtensionClassLibraryPtr p_library, GDNativeInitialization *r_initialization) {
-	godot::GDExtensionBinding::InitObject init_obj(p_interface, p_library, r_initialization);
+	GDExtensionBinding::InitObject init_obj(p_interface, p_library, r_initialization);
 
 	init_obj.register_driver_initializer(register_webrtc_extension_types);
 	init_obj.register_driver_terminator(unregister_webrtc_extension_types);
