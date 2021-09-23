@@ -58,8 +58,8 @@ private:
 	rtc::scoped_refptr<webrtc::DataChannelInterface> channel;
 
 	std::mutex *mutex;
-	std::queue<godot::PackedByteArray> packet_queue;
-	godot::PackedByteArray current_packet;
+	std::queue<std::vector<uint8_t>> packet_queue;
+	std::vector<uint8_t> current_packet;
 	std::string label;
 	std::string protocol;
 

@@ -70,14 +70,9 @@ void WebRTCLibDataChannel::bind_channel(rtc::scoped_refptr<webrtc::DataChannelIn
 void WebRTCLibDataChannel::queue_packet(const uint8_t *data, uint32_t size) {
 	mutex->lock();
 
-	// TODO FIXME
-	WARN_PRINT("This should do something!");
-	godot::PackedByteArray packet;
-	//packet.resize(size);
-	//{
-	//	godot::PackedByteArray::Write w = packet.write();
-	//	memcpy(w.ptr(), data, size);
-	//}
+	std::vector<uint8_t> packet;
+	packet.resize(size);
+	memcpy(&packet[0], data, size);
 	packet_queue.push(packet);
 
 	mutex->unlock();
@@ -158,14 +153,9 @@ int64_t WebRTCLibDataChannel::_get_packet(const uint8_t **r_buffer, int32_t *r_l
 	// Update current packet and pop queue
 	current_packet = packet_queue.front();
 	packet_queue.pop();
-	// TODO FIXME broken
-	*r_buffer = nullptr;
-	*r_len = 0;
-#if 0
 	// Set out buffer and size (buffer will be gone at next get_packet or close)
-	*r_buffer = current_packet.read().ptr();
+	*r_buffer = &current_packet[0];
 	*r_len = current_packet.size();
-#endif
 
 	mutex->unlock();
 
