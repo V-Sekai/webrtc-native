@@ -307,7 +307,7 @@ WebRTCLibPeerConnection::WebRTCLibPeerConnection() :
 }
 
 WebRTCLibPeerConnection::~WebRTCLibPeerConnection() {
-	close();
+	_close();
 	delete mutex_signal_queue;
 }
 
