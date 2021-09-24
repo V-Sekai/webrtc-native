@@ -188,6 +188,6 @@ WebRTCLibDataChannel::WebRTCLibDataChannel() :
 }
 
 WebRTCLibDataChannel::~WebRTCLibDataChannel() {
-	close();
+	_close();
 	delete mutex;
 }

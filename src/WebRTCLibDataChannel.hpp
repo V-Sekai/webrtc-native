@@ -49,7 +49,7 @@
 namespace godot_webrtc {
 
 class WebRTCLibDataChannel : public godot::WebRTCDataChannelExtension {
-	GDCLASS(WebRTCLibDataChannel, godot::WebRTCDataChannelExtension);
+	GDCLASS(WebRTCLibDataChannel, WebRTCDataChannelExtension);
 
 private:
 	class ChannelObserver : public webrtc::DataChannelObserver {

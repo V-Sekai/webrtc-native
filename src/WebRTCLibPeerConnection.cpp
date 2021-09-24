@@ -85,13 +85,13 @@ void WebRTCLibPeerConnection::deinitialize_signaling() {
 	}
 }
 
-int64_t _parse_ice_server(webrtc::PeerConnectionInterface::RTCConfiguration &r_config, Dictionary p_server) {
+Error WebRTCLibPeerConnection::_parse_ice_server(webrtc::PeerConnectionInterface::RTCConfiguration &r_config, Dictionary p_server) {
 	Variant nil;
 	Variant v;
 	webrtc::PeerConnectionInterface::IceServer ice_server;
 	String url;
 
-	ERR_FAIL_COND_V(!p_server.has("urls"), GODOT_ERR_INVALID_PARAMETER);
+	ERR_FAIL_COND_V(!p_server.has("urls"), ERR_INVALID_PARAMETER);
 
 	// Parse mandatory URL
 	v = p_server.get("urls", nil);
@@ -104,13 +104,13 @@ int64_t _parse_ice_server(webrtc::PeerConnectionInterface::RTCConfiguration &r_c
 #if 0
 		for (int j = 0; j < names.size(); j++) {
 			v = names[j];
-			ERR_FAIL_COND_V(v.get_type() != Variant::STRING, GODOT_ERR_INVALID_PARAMETER);
+			ERR_FAIL_COND_V(v.get_type() != Variant::STRING, ERR_INVALID_PARAMETER);
 			url = v;
 			ice_server.urls.push_back(url.utf8().get_data());
 		}
 #endif
 	} else {
-		ERR_FAIL_V(GODOT_ERR_INVALID_PARAMETER);
+		ERR_FAIL_V(ERR_INVALID_PARAMETER);
 	}
 	// Parse credentials (only meaningful for TURN, only support password)
 	if (p_server.has("username") && (v = p_server.get("username", nil)) && v.get_type() == Variant::STRING) {
@@ -121,10 +121,10 @@ int64_t _parse_ice_server(webrtc::PeerConnectionInterface::RTCConfiguration &r_c
 	}
 
 	r_config.servers.push_back(ice_server);
-	return GODOT_OK;
+	return OK;
 }
 
-int64_t _parse_channel_config(webrtc::DataChannelInit &r_config, const Dictionary &p_dict) {
+Error WebRTCLibPeerConnection::_parse_channel_config(webrtc::DataChannelInit &r_config, const Dictionary &p_dict) {
 	Variant nil;
 	Variant v;
 #define _SET_N(PROP, PNAME, TYPE)          \
@@ -145,10 +145,10 @@ int64_t _parse_channel_config(webrtc::DataChannelInit &r_config, const Dictionar
 	}
 
 	// ID makes sense only when negotiated is true (and must be set in that case)
-	ERR_FAIL_COND_V(r_config.negotiated ? r_config.id == -1 : r_config.id != -1, GODOT_ERR_INVALID_PARAMETER);
+	ERR_FAIL_COND_V(r_config.negotiated ? r_config.id == -1 : r_config.id != -1, ERR_INVALID_PARAMETER);
 	// Only one of maxRetransmits and maxRetransmitTime can be set on a channel.
-	ERR_FAIL_COND_V(r_config.maxRetransmits && r_config.maxRetransmitTime, GODOT_ERR_INVALID_PARAMETER);
-	return GODOT_OK;
+	ERR_FAIL_COND_V(r_config.maxRetransmits && r_config.maxRetransmitTime, ERR_INVALID_PARAMETER);
+	return OK;
 }
 
 int64_t WebRTCLibPeerConnection::_get_connection_state() const {
@@ -184,11 +184,10 @@ int64_t WebRTCLibPeerConnection::_initialize(const Dictionary &p_config) {
 		Array servers = v;
 		for (int i = 0; i < servers.size(); i++) {
 			v = servers[i];
-			ERR_FAIL_COND_V(v.get_type() != Variant::DICTIONARY, GODOT_ERR_INVALID_PARAMETER);
-			int64_t err;
+			ERR_FAIL_COND_V(v.get_type() != Variant::DICTIONARY, ERR_INVALID_PARAMETER);
 			Dictionary server = v;
-			err = _parse_ice_server(config, server);
-			ERR_FAIL_COND_V(err != GODOT_OK, err);
+			Error err = _parse_ice_server(config, server);
+			ERR_FAIL_COND_V(err != OK, err);
 		}
 	}
 #endif
@@ -196,45 +195,46 @@ int64_t WebRTCLibPeerConnection::_initialize(const Dictionary &p_config) {
 }
 
 Object *WebRTCLibPeerConnection::_create_data_channel(const String &p_channel, const Dictionary &p_channel_config) {
-	ERR_FAIL_COND_V(peer_connection.get() == nullptr, NULL);
+	ERR_FAIL_COND_V(peer_connection.get() == nullptr, nullptr);
 
 	// Read config from dictionary
 	webrtc::DataChannelInit config;
-	int64_t err = _parse_channel_config(config, p_channel_config);
-	ERR_FAIL_COND_V(err != GODOT_OK, NULL);
+	Error err = _parse_channel_config(config, p_channel_config);
+	ERR_FAIL_COND_V(err != OK, nullptr);
 
-	WebRTCLibDataChannel *wrapper = WebRTCLibDataChannel::new_data_channel(peer_connection->CreateDataChannel(p_channel.utf8().get_data(), &config));
-	ERR_FAIL_COND_V(wrapper == NULL, NULL);
+	rtc::scoped_refptr<webrtc::DataChannelInterface> ch = peer_connection->CreateDataChannel(p_channel.utf8().get_data(), &config);
+	WebRTCLibDataChannel *wrapper = WebRTCLibDataChannel::new_data_channel(ch);
+	ERR_FAIL_COND_V(wrapper == nullptr, nullptr);
 	return wrapper;
 }
 
 int64_t WebRTCLibPeerConnection::_create_offer() {
-	ERR_FAIL_COND_V(peer_connection.get() == nullptr, GODOT_ERR_UNCONFIGURED);
+	ERR_FAIL_COND_V(peer_connection.get() == nullptr, ERR_UNCONFIGURED);
 	peer_connection->CreateOffer(ptr_csdo, webrtc::PeerConnectionInterface::RTCOfferAnswerOptions());
-	return GODOT_OK;
+	return OK;
 }
 
 #define _MAKE_DESC(TYPE, SDP) webrtc::CreateSessionDescription((String(TYPE) == String("offer") ? webrtc::SdpType::kOffer : webrtc::SdpType::kAnswer), SDP.utf8().get_data())
 int64_t WebRTCLibPeerConnection::_set_remote_description(const String &type, const String &sdp) {
-	ERR_FAIL_COND_V(peer_connection.get() == nullptr, GODOT_ERR_UNCONFIGURED);
+	ERR_FAIL_COND_V(peer_connection.get() == nullptr, ERR_UNCONFIGURED);
 	std::unique_ptr<webrtc::SessionDescriptionInterface> desc = _MAKE_DESC(type, sdp);
 	if (desc->GetType() == webrtc::SdpType::kOffer) {
 		ptr_ssdo->make_offer = true;
 	}
 	peer_connection->SetRemoteDescription(ptr_ssdo, desc.release());
-	return GODOT_OK;
+	return OK;
 }
 
 int64_t WebRTCLibPeerConnection::_set_local_description(const String &type, const String &sdp) {
-	ERR_FAIL_COND_V(peer_connection.get() == nullptr, GODOT_ERR_UNCONFIGURED);
+	ERR_FAIL_COND_V(peer_connection.get() == nullptr, ERR_UNCONFIGURED);
 	std::unique_ptr<webrtc::SessionDescriptionInterface> desc = _MAKE_DESC(type, sdp);
 	peer_connection->SetLocalDescription(ptr_ssdo, desc.release());
-	return GODOT_OK;
+	return OK;
 }
 #undef _MAKE_DESC
 
 int64_t WebRTCLibPeerConnection::_add_ice_candidate(const String &sdpMidName, int64_t sdpMlineIndexName, const String &sdpName) {
-	ERR_FAIL_COND_V(peer_connection.get() == nullptr, GODOT_ERR_UNCONFIGURED);
+	ERR_FAIL_COND_V(peer_connection.get() == nullptr, ERR_UNCONFIGURED);
 
 	webrtc::SdpParseError *error = nullptr;
 	webrtc::IceCandidateInterface *candidate = webrtc::CreateIceCandidate(
@@ -243,14 +243,14 @@ int64_t WebRTCLibPeerConnection::_add_ice_candidate(const String &sdpMidName, in
 			sdpName.utf8().get_data(),
 			error);
 
-	ERR_FAIL_COND_V(error || !candidate, GODOT_ERR_INVALID_PARAMETER);
-	ERR_FAIL_COND_V(!peer_connection->AddIceCandidate(candidate), GODOT_FAILED);
+	ERR_FAIL_COND_V(error || !candidate, ERR_INVALID_PARAMETER);
+	ERR_FAIL_COND_V(!peer_connection->AddIceCandidate(candidate), FAILED);
 
-	return GODOT_OK;
+	return OK;
 }
 
 int64_t WebRTCLibPeerConnection::_poll() {
-	ERR_FAIL_COND_V(peer_connection.get() == nullptr, GODOT_ERR_UNCONFIGURED);
+	ERR_FAIL_COND_V(peer_connection.get() == nullptr, ERR_UNCONFIGURED);
 
 	while (!signal_queue.empty()) {
 		mutex_signal_queue->lock();
@@ -259,7 +259,7 @@ int64_t WebRTCLibPeerConnection::_poll() {
 		mutex_signal_queue->unlock();
 		signal.emit(this);
 	}
-	return GODOT_OK;
+	return OK;
 }
 
 void WebRTCLibPeerConnection::_close() {
@@ -288,15 +288,15 @@ void WebRTCLibPeerConnection::_init() {
 	_create_pc(config);
 }
 
-int64_t WebRTCLibPeerConnection::_create_pc(webrtc::PeerConnectionInterface::RTCConfiguration &config) {
-	ERR_FAIL_COND_V(pc_factory.get() == nullptr, GODOT_ERR_BUG);
+Error WebRTCLibPeerConnection::_create_pc(webrtc::PeerConnectionInterface::RTCConfiguration &config) {
+	ERR_FAIL_COND_V(pc_factory.get() == nullptr, ERR_BUG);
 	peer_connection = nullptr;
 	peer_connection = pc_factory->CreatePeerConnection(config, nullptr, nullptr, &pco);
 	if (peer_connection.get() == nullptr) { // PeerConnection couldn't be created. Fail the method call.
 		ERR_PRINT("PeerConnection could not be created");
-		return GODOT_FAILED;
+		return FAILED;
 	}
-	return GODOT_OK;
+	return OK;
 }
 
 WebRTCLibPeerConnection::WebRTCLibPeerConnection() :

@@ -43,9 +43,11 @@ class WebRTCLibPeerConnection : public godot::WebRTCPeerConnectionExtension {
 	GDCLASS(WebRTCLibPeerConnection, WebRTCPeerConnectionExtension);
 
 private:
-	int64_t _create_pc(webrtc::PeerConnectionInterface::RTCConfiguration &config);
-
 	static std::unique_ptr<rtc::Thread> signaling_thread;
+
+	godot::Error _create_pc(webrtc::PeerConnectionInterface::RTCConfiguration &config);
+	godot::Error _parse_ice_server(webrtc::PeerConnectionInterface::RTCConfiguration &r_config, godot::Dictionary p_server);
+	godot::Error _parse_channel_config(webrtc::DataChannelInit &r_config, const godot::Dictionary &p_dict);
 
 protected:
 	static void _bind_methods() {}
