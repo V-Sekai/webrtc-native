@@ -70,8 +70,8 @@ private:
 	std::mutex *mutex;
 	std::queue<std::vector<uint8_t>> packet_queue;
 	std::vector<uint8_t> current_packet;
-	std::string label;
-	std::string protocol;
+	godot::String label;
+	godot::String protocol;
 
 protected:
 	static void _bind_methods() {}

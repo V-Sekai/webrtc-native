@@ -84,8 +84,8 @@ void WebRTCLibDataChannel::bind_channel(rtc::scoped_refptr<webrtc::DataChannelIn
 	ERR_FAIL_COND(p_channel.get() == nullptr);
 
 	channel = p_channel;
-	label = p_channel->label();
-	protocol = p_channel->protocol();
+	label = p_channel->label().c_str();
+	protocol = p_channel->protocol().c_str();
 	channel->RegisterObserver(&observer);
 }
 
@@ -118,7 +118,7 @@ int64_t WebRTCLibDataChannel::_get_ready_state() const {
 
 String WebRTCLibDataChannel::_get_label() const {
 	ERR_FAIL_COND_V(channel.get() == nullptr, "");
-	return label.c_str();
+	return label;
 }
 
 bool WebRTCLibDataChannel::_is_ordered() const {
@@ -143,7 +143,7 @@ int64_t WebRTCLibDataChannel::_get_max_retransmits() const {
 
 String WebRTCLibDataChannel::_get_protocol() const {
 	ERR_FAIL_COND_V(channel.get() == nullptr, "");
-	return protocol.c_str();
+	return protocol;
 }
 
 bool WebRTCLibDataChannel::_is_negotiated() const {
