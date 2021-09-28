@@ -298,6 +298,9 @@ void WebRTCLibPeerConnection::_close() {
 }
 
 void WebRTCLibPeerConnection::_init() {
+#ifdef GDNATIVE_WEBRTC
+	register_interface(&interface);
+#endif
 	// initialize variables:
 	mutex_signal_queue = new std::mutex;
 
@@ -328,10 +331,17 @@ WebRTCLibPeerConnection::WebRTCLibPeerConnection() :
 		pco(this),
 		ptr_csdo(new rtc::RefCountedObject<GodotCSDO>(this)),
 		ptr_ssdo(new rtc::RefCountedObject<GodotSSDO>(this)) {
+#ifndef GDNATIVE_WEBRTC
 	_init();
+#endif
 }
 
 WebRTCLibPeerConnection::~WebRTCLibPeerConnection() {
+#ifdef GDNATIVE_WEBRTC
+	if (_owner) {
+		register_interface(nullptr);
+	}
+#endif
 	_close();
 	delete mutex_signal_queue;
 }
