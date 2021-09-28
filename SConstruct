@@ -75,6 +75,7 @@ opts.Add(EnumVariable("macos_arch", "Target macOS architecture", "x86_64", ["x86
 
 opts.Add("godot_headers", "Godot headers directory", "godot-cpp/godot-headers")
 opts.Add("godot_cpp", "Godot C++ bindings headers directory", "godot-cpp/")
+opts.Add(EnumVariable("godot_version", "The Godot target version", "4", ["3", "4"]))
 
 # Update environment (parse options)
 opts.Update(env)
@@ -369,11 +370,15 @@ elif target_platform == "android":
 # Our includes and sources
 env.Append(CPPPATH=["src/"])
 sources = []
-sources.append("src/init.cpp")
-sources.append("src/WebRTCLibDataChannel.cpp")
-sources.append("src/WebRTCLibPeerConnection.cpp")
-#add_sources(sources, "src/", "cpp")
-#add_sources(sources, "src/net/", "cpp")
+sources.append([
+    "src/WebRTCLibDataChannel.cpp",
+    "src/WebRTCLibPeerConnection.cpp",
+])
+if env["godot_version"] == "4":
+    sources.append("src/init_gdextension.cpp")
+else:
+    sources.append("src/init_gdnative.cpp")
+    add_sources(sources, "src/net/", "cpp")
 
 # Suffix
 suffix = ".%s.%s" % (target, target_arch)
