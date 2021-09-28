@@ -84,14 +84,14 @@ public:
 	void queue_packet(const uint8_t *data, uint32_t size);
 
 	/* PacketPeer */
-	virtual int64_t _get_packet(const uint8_t **r_buffer, int32_t *r_len);
-	virtual int64_t _put_packet(const uint8_t *p_buffer, int p_len);
-	virtual int64_t _get_available_packet_count() const;
-	virtual int64_t _get_max_packet_size() const;
+	virtual int64_t _get_packet(const uint8_t **r_buffer, int32_t *r_len) override;
+	virtual int64_t _put_packet(const uint8_t *p_buffer, int p_len) override;
+	virtual int64_t _get_available_packet_count() const override;
+	virtual int64_t _get_max_packet_size() const override;
 
 	/* WebRTCDataChannel */
-	int64_t _poll();
-	void _close();
+	int64_t _poll() override;
+	void _close() override;
 
 	void _set_write_mode(int64_t mode) override;
 	int64_t _get_write_mode() const override;
@@ -104,8 +104,8 @@ public:
 	int64_t _get_max_packet_life_time() const override;
 	int64_t _get_max_retransmits() const override;
 	godot::String _get_protocol() const override;
-	bool _is_negotiated() const;
-	int64_t _get_buffered_amount() const;
+	bool _is_negotiated() const override;
+	int64_t _get_buffered_amount() const override;
 
 	WebRTCLibDataChannel();
 	~WebRTCLibDataChannel();

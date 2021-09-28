@@ -69,7 +69,7 @@ public:
 
 	void _init();
 
-	int64_t _get_connection_state() const;
+	int64_t _get_connection_state() const override;
 
 	int64_t _initialize(const godot::Dictionary &p_config) override;
 	godot::Object *_create_data_channel(const godot::String &p_channel, const godot::Dictionary &p_channel_config) override;

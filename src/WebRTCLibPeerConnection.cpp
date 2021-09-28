@@ -126,15 +126,12 @@ Error WebRTCLibPeerConnection::_parse_ice_server(webrtc::PeerConnectionInterface
 		ice_server.urls.push_back(url.utf8().get_data());
 	} else if (v.get_type() == Variant::ARRAY) {
 		Array names = v;
-		// TODO No accessors for arrays
-#if 0
 		for (int j = 0; j < names.size(); j++) {
 			v = names[j];
 			ERR_FAIL_COND_V(v.get_type() != Variant::STRING, ERR_INVALID_PARAMETER);
 			url = v;
 			ice_server.urls.push_back(url.utf8().get_data());
 		}
-#endif
 	} else {
 		ERR_FAIL_V(ERR_INVALID_PARAMETER);
 	}
@@ -203,8 +200,6 @@ int64_t WebRTCLibPeerConnection::_get_connection_state() const {
 int64_t WebRTCLibPeerConnection::_initialize(const Dictionary &p_config) {
 	webrtc::PeerConnectionInterface::RTCConfiguration config;
 	Variant v;
-	// TODO FIXME No accessors for array.
-#if 0
 	if (p_config.has("iceServers") && (v = p_config["iceServers"]) && v.get_type() == Variant::ARRAY) {
 		Array servers = v;
 		for (int i = 0; i < servers.size(); i++) {
@@ -212,10 +207,9 @@ int64_t WebRTCLibPeerConnection::_initialize(const Dictionary &p_config) {
 			ERR_FAIL_COND_V(v.get_type() != Variant::DICTIONARY, ERR_INVALID_PARAMETER);
 			Dictionary server = v;
 			Error err = _parse_ice_server(config, server);
-			ERR_FAIL_COND_V(err != OK, err);
+			ERR_FAIL_COND_V(err != OK, FAILED);
 		}
 	}
-#endif
 	return (int64_t)_create_pc(config);
 }
 
