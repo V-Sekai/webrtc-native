@@ -38,14 +38,6 @@
 
 #include <mutex>
 
-// TODO Errors compat, will need more work.
-#define GODOT_OK ::godot::OK
-#define GODOT_FAILED ::godot::FAILED
-#define GODOT_ERR_UNAVAILABLE ::godot::ERR_UNAVAILABLE
-#define GODOT_ERR_BUG ::godot::ERR_BUG
-#define GODOT_ERR_INVALID_PARAMETER ::godot::ERR_INVALID_PARAMETER
-#define GODOT_ERR_UNCONFIGURED ::godot::ERR_UNCONFIGURED
-
 namespace godot_webrtc {
 
 class WebRTCLibDataChannel : public godot::WebRTCDataChannelExtension {
