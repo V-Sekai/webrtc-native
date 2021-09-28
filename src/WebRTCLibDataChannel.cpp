@@ -30,6 +30,13 @@
 
 #include "WebRTCLibDataChannel.hpp"
 
+#ifdef GDNATIVE_WEBRTC
+#include "GDNativeLibrary.hpp"
+#include "NativeScript.hpp"
+#define ERR_UNAVAILABLE GODOT_ERR_UNAVAILABLE
+#define FAILED GODOT_FAILED
+#endif
+
 using namespace godot;
 using namespace godot_webrtc;
 
@@ -53,9 +60,24 @@ WebRTCLibDataChannel *WebRTCLibDataChannel::new_data_channel(rtc::scoped_refptr<
 	// Invalid channel result in NULL return
 	ERR_FAIL_COND_V(p_channel.get() == nullptr, nullptr);
 
+#ifdef GDNATIVE_WEBRTC
+	// Instance a WebRTCDataChannelGDNative object
+	WebRTCDataChannelGDNative *out = WebRTCDataChannelGDNative::_new();
+	// Set our implementation as it's script
+	NativeScript *script = NativeScript::_new();
+	script->set_library(detail::get_wrapper<GDNativeLibrary>((godot_object *)gdnlib));
+	script->set_class_name("WebRTCLibDataChannel");
+	out->set_script(script);
+
+	// Bind the data channel to the ScriptInstance userdata (our script)
+	WebRTCLibDataChannel *tmp = out->cast_to<WebRTCLibDataChannel>(out);
+	tmp->bind_channel(p_channel);
+	return tmp;
+#else
 	WebRTCLibDataChannel *out = memnew(WebRTCLibDataChannel());
 	out->bind_channel(p_channel);
 	return out;
+#endif
 }
 
 void WebRTCLibDataChannel::bind_channel(rtc::scoped_refptr<webrtc::DataChannelInterface> p_channel) {
@@ -94,7 +116,7 @@ int64_t WebRTCLibDataChannel::_get_ready_state() const {
 	return channel->state();
 }
 
-godot::String WebRTCLibDataChannel::_get_label() const {
+String WebRTCLibDataChannel::_get_label() const {
 	ERR_FAIL_COND_V(channel.get() == nullptr, "");
 	return label.c_str();
 }
@@ -119,7 +141,7 @@ int64_t WebRTCLibDataChannel::_get_max_retransmits() const {
 	return channel->maxRetransmits();
 }
 
-godot::String WebRTCLibDataChannel::_get_protocol() const {
+String WebRTCLibDataChannel::_get_protocol() const {
 	ERR_FAIL_COND_V(channel.get() == nullptr, "");
 	return protocol.c_str();
 }

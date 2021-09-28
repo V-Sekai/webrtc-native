@@ -282,17 +282,6 @@ else:
     print("No valid target platform selected.")
     sys.exit(1)
 
-# Godot CPP bindings
-env.Append(CPPPATH=[godot_headers])
-env.Append(CPPPATH=[godot_cpp + "/include", godot_cpp + "/gen/include"])
-env.Append(LIBPATH=[godot_cpp_lib_dir])
-env.Append(
-    LIBS=[
-        "%sgodot-cpp.%s.%s.%s%s"
-        % (lib_prefix, target_platform, target, target_arch, ".simulator" if env["ios_simulator"] else "")
-    ]
-)
-
 # WebRTC stuff
 webrtc_dir = "webrtc"
 lib_name = "libwebrtc_full"
@@ -367,6 +356,16 @@ elif target_platform == "android":
     elif target_arch == "armv7":
         env.Append(CCFLAGS=["-DWEBRTC_ARCH_ARM", "-DWEBRTC_ARCH_ARM_V7", "-DWEBRTC_HAS_NEON"])
 
+# Godot CPP bindings
+env.Append(CPPPATH=[godot_headers])
+env.Append(LIBPATH=[godot_cpp_lib_dir])
+env.Append(
+    LIBS=[
+        "%sgodot-cpp.%s.%s.%s%s"
+        % (lib_prefix, target_platform, target, target_arch, ".simulator" if env["ios_simulator"] else "")
+    ]
+)
+
 # Our includes and sources
 env.Append(CPPPATH=["src/"])
 sources = []
@@ -375,8 +374,11 @@ sources.append([
     "src/WebRTCLibPeerConnection.cpp",
 ])
 if env["godot_version"] == "4":
+    env.Append(CPPPATH=[godot_cpp + "/include", godot_cpp + "/gen/include"])
     sources.append("src/init_gdextension.cpp")
 else:
+    env.Append(CPPPATH=[godot_cpp + "/include", godot_cpp + "/include/core", godot_cpp + "/include/gen"])
+    env.Append(CPPDEFINES=["-DGDNATIVE_WEBRTC"])
     sources.append("src/init_gdnative.cpp")
     add_sources(sources, "src/net/", "cpp")
 

@@ -31,10 +31,20 @@
 #ifndef WEBRTC_DATA_CHANNEL_H
 #define WEBRTC_DATA_CHANNEL_H
 
+#ifdef GDNATIVE_WEBRTC
+#include <Godot.hpp> // Godot.hpp must go first, or windows builds breaks
+#include "net/WebRTCDataChannelNative.hpp"
+#undef GDCLASS
+#define GDCLASS(arg1, arg2) GODOT_CLASS(WebRTCLibDataChannel, WebRTCDataChannelNative);
+namespace godot {
+	using WebRTCDataChannelExtension = WebRTCDataChannelNative;
+};
+#else
+#include <godot_cpp/classes/web_rtc_data_channel_extension.hpp>
+#endif
+
 #include "api/peer_connection_interface.h" // interface for all things needed from WebRTC
 #include "media/base/media_engine.h" // needed for CreateModularPeerConnectionFactory
-
-#include <godot_cpp/classes/web_rtc_data_channel_extension.hpp>
 
 #include <mutex>
 

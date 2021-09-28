@@ -34,6 +34,33 @@
 using namespace godot;
 using namespace godot_webrtc;
 
+#ifdef GDNATIVE_WEBRTC
+#define MK_ERROR(m_err)\
+struct Castable##m_err {\
+	operator int64_t() {\
+		return GODOT_##m_err;\
+	}\
+	operator godot::Error() {\
+		return godot::Error::m_err;\
+	}\
+	Castable##m_err() {\
+	}\
+};
+
+MK_ERROR(OK);
+#define OK CastableOK()
+MK_ERROR(FAILED);
+#define FAILED CastableFAILED()
+MK_ERROR(ERR_UNCONFIGURED);
+#define ERR_UNCONFIGURED CastableERR_UNCONFIGURED()
+MK_ERROR(ERR_UNAVAILABLE);
+#define ERR_UNAVAILABLE CastableERR_UNAVAILABLE()
+MK_ERROR(ERR_INVALID_PARAMETER);
+#define ERR_INVALID_PARAMETER CastableERR_INVALID_PARAMETER()
+MK_ERROR(ERR_BUG);
+#define ERR_BUG CastableERR_BUG()
+#endif
+
 std::unique_ptr<rtc::Thread> WebRTCLibPeerConnection::signaling_thread = nullptr;
 
 // PeerConnectionObserver
@@ -86,7 +113,6 @@ void WebRTCLibPeerConnection::deinitialize_signaling() {
 }
 
 Error WebRTCLibPeerConnection::_parse_ice_server(webrtc::PeerConnectionInterface::RTCConfiguration &r_config, Dictionary p_server) {
-	Variant nil;
 	Variant v;
 	webrtc::PeerConnectionInterface::IceServer ice_server;
 	String url;
@@ -94,7 +120,7 @@ Error WebRTCLibPeerConnection::_parse_ice_server(webrtc::PeerConnectionInterface
 	ERR_FAIL_COND_V(!p_server.has("urls"), ERR_INVALID_PARAMETER);
 
 	// Parse mandatory URL
-	v = p_server.get("urls", nil);
+	v = p_server["urls"];
 	if (v.get_type() == Variant::STRING) {
 		url = v;
 		ice_server.urls.push_back(url.utf8().get_data());
@@ -113,10 +139,10 @@ Error WebRTCLibPeerConnection::_parse_ice_server(webrtc::PeerConnectionInterface
 		ERR_FAIL_V(ERR_INVALID_PARAMETER);
 	}
 	// Parse credentials (only meaningful for TURN, only support password)
-	if (p_server.has("username") && (v = p_server.get("username", nil)) && v.get_type() == Variant::STRING) {
+	if (p_server.has("username") && (v = p_server["username"]) && v.get_type() == Variant::STRING) {
 		ice_server.username = (v.operator String()).utf8().get_data();
 	}
-	if (p_server.has("credential") && (v = p_server.get("credential", nil)) && v.get_type() == Variant::STRING) {
+	if (p_server.has("credential") && (v = p_server["credential"]) && v.get_type() == Variant::STRING) {
 		ice_server.password = (v.operator String()).utf8().get_data();
 	}
 
@@ -125,11 +151,10 @@ Error WebRTCLibPeerConnection::_parse_ice_server(webrtc::PeerConnectionInterface
 }
 
 Error WebRTCLibPeerConnection::_parse_channel_config(webrtc::DataChannelInit &r_config, const Dictionary &p_dict) {
-	Variant nil;
 	Variant v;
 #define _SET_N(PROP, PNAME, TYPE)          \
 	if (p_dict.has(#PROP)) {               \
-		v = p_dict.get(#PROP, nil);        \
+		v = p_dict[#PROP];        \
 		if (v.get_type() == Variant::TYPE) \
 			r_config.PNAME = v;            \
 	}
@@ -140,7 +165,7 @@ Error WebRTCLibPeerConnection::_parse_channel_config(webrtc::DataChannelInit &r_
 	_SET(maxRetransmits, INT);
 	_SET(ordered, BOOL);
 #undef _SET
-	if (p_dict.has("protocol") && (v = p_dict.get("protocol", nil)) && v.get_type() == Variant::STRING) {
+	if (p_dict.has("protocol") && (v = p_dict["protocol"]) && v.get_type() == Variant::STRING) {
 		r_config.protocol = v.operator String().utf8().get_data();
 	}
 
@@ -191,7 +216,7 @@ int64_t WebRTCLibPeerConnection::_initialize(const Dictionary &p_config) {
 		}
 	}
 #endif
-	return _create_pc(config);
+	return (int64_t)_create_pc(config);
 }
 
 Object *WebRTCLibPeerConnection::_create_data_channel(const String &p_channel, const Dictionary &p_channel_config) {
