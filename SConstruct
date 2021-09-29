@@ -369,10 +369,12 @@ env.Append(
 # Our includes and sources
 env.Append(CPPPATH=["src/"])
 sources = []
-sources.append([
-    "src/WebRTCLibDataChannel.cpp",
-    "src/WebRTCLibPeerConnection.cpp",
-])
+sources.append(
+    [
+        "src/WebRTCLibDataChannel.cpp",
+        "src/WebRTCLibPeerConnection.cpp",
+    ]
+)
 if env["godot_version"] == "4":
     env.Append(CPPPATH=[godot_cpp + "/include", godot_cpp + "/gen/include"])
     sources.append("src/init_gdextension.cpp")
