@@ -2,8 +2,8 @@ name: 🔧 Build -> Package 📦
 on: [push, pull_request]
 
 env:
-  GODOT_VERSION: '3'
-  GODOT_CPP: 'godot-cpp-3.x'
+  GODOT_VERSION: '4'
+  GODOT_CPP: 'godot-cpp'
 
 jobs:
   static-checks:
@@ -163,7 +163,16 @@ jobs:
           platform: ${{ matrix.platform }}
           archs: ${{ matrix.arch }}
 
-      - name: Fix godot-cpp revision and file names for OSX arm64 build.
+      - name: Fix godot-cpp for Godot 4.
+        shell: bash
+        run: |
+          if [ "${GODOT_VERSION}" != "3" ]; then
+              cd ${GODOT_CPP}
+              patch -p1 < ../misc/patches/cpp_array_assign.diff
+              cp ../misc/patches/extension_api.json godot-headers/extension_api.json
+          fi
+
+      - name: Fix godot-cpp file names for OSX arm64 build.
         if: ${{ matrix.platform == 'osx' && matrix.arch == 'arm64' }}
         run: |
           cd ${GODOT_CPP}
