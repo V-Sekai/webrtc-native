@@ -1,0 +1,43 @@
+diff --git a/binding_generator.py b/binding_generator.py
+index 054684e..5358ebc 100644
+--- a/binding_generator.py
++++ b/binding_generator.py
+@@ -435,6 +435,10 @@ def generate_builtin_class_header(builtin_api, size, used_classes, fully_used_cl
+         result.append(f"\tconst " + return_type + f" &operator[](int p_index) const;")
+         result.append(f"\t" + return_type + f" &operator[](int p_index);")
+ 
++    if class_name == "Array":
++        result.append(f"\tconst Variant &operator[](int p_index) const;")
++        result.append(f"\tVariant &operator[](int p_index);")
++
+     result.append("};")
+ 
+     if class_name == "String":
+diff --git a/src/variant/packed_arrays.cpp b/src/variant/packed_arrays.cpp
+index 30a0016..792adbb 100644
+--- a/src/variant/packed_arrays.cpp
++++ b/src/variant/packed_arrays.cpp
+@@ -41,6 +41,8 @@
+ #include <godot_cpp/variant/packed_string_array.hpp>
+ #include <godot_cpp/variant/packed_vector2_array.hpp>
+ #include <godot_cpp/variant/packed_vector3_array.hpp>
++#include <godot_cpp/variant/array.hpp>
++#include <godot_cpp/variant/variant.hpp>
+ 
+ namespace godot {
+ 
+@@ -124,4 +126,14 @@ Vector3 &PackedVector3Array::operator[](int p_index) {
+ 	return *vec;
+ }
+ 
++const Variant &Array::operator[](int p_index) const {
++	const Variant *v = (Variant *)internal::interface->array_operator_index_const((GDNativeTypePtr *)this, p_index);
++	return *v;
++}
++
++Variant &Array::operator[](int p_index) {
++	Variant *v = (Variant *)internal::interface->array_operator_index((GDNativeTypePtr *)this, p_index);
++	return *v;
++}
++
+ } // namespace godot
