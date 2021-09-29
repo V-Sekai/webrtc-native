@@ -103,6 +103,9 @@ lib_prefix = ""
 if "CXX" in env and "clang" in os.path.basename(env["CXX"]):
     env["use_llvm"] = True
 
+# Require C++17
+env.Append(CCFLAGS=["-std=c++17"])
+
 if target_platform == "linux":
     env["CXX"] = "g++"
 
@@ -119,7 +122,7 @@ if target_platform == "linux":
     else:
         env.Prepend(CCFLAGS=["-O3"])
 
-    env.Append(CCFLAGS=["-fPIC", "-std=c++17"])
+    env.Append(CCFLAGS=["-fPIC"])
 
     if target_arch == "32":
         env.Append(CCFLAGS=["-m32"])
@@ -150,7 +153,7 @@ elif target_platform == "windows":
         elif env["target"] == "release":
             env.Append(CCFLAGS=["-O3"])
 
-        env.Append(CCFLAGS=["-std=c++17", "-Wwrite-strings"])
+        env.Append(CCFLAGS=["-Wwrite-strings"])
         env.Append(LINKFLAGS=["--static", "-Wl,--no-undefined", "-static-libgcc", "-static-libstdc++"])
 
 elif target_platform == "osx":
@@ -162,7 +165,7 @@ elif target_platform == "osx":
     if env["macos_arch"] != "x86_64":
         target_arch = "arm64"
 
-    env.Append(CCFLAGS=["-std=c++17", "-arch", env["macos_arch"]])
+    env.Append(CCFLAGS=["-arch", env["macos_arch"]])
     env.Append(LINKFLAGS=["-arch", env["macos_arch"], "-framework", "Cocoa", "-Wl,-undefined,dynamic_lookup"])
 
     if env["macos_sdk_path"]:
@@ -196,7 +199,7 @@ elif target_platform == "ios":
     env["AR"] = compiler_path + "ar"
     env["RANLIB"] = compiler_path + "ranlib"
 
-    env.Append(CCFLAGS=["-std=c++17", "-arch", env["ios_arch"], "-isysroot", sdk_path])
+    env.Append(CCFLAGS=["-arch", env["ios_arch"], "-isysroot", sdk_path])
     env.Append(
         LINKFLAGS=["-arch", env["ios_arch"], "-Wl,-undefined,dynamic_lookup", "-isysroot", sdk_path, "-F" + sdk_path]
     )
