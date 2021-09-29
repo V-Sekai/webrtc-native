@@ -42,6 +42,8 @@ $ scons platform=<your platform> generate_bindings=yes
 $ cd ..
 ```
 
+> When building the GDNative library for Godot 3 use the `godot-cpp-3.x` folder instead.
+
 > Replace `<your platform>` with either `windows`, `linux` or `osx`.
 
 > Include `use_llvm=yes` for using clang++
@@ -68,4 +70,6 @@ Extract content of `include` into `webrtc/include` and content of `bin` into `we
 $ scons platform=<your platform> target=<your target>
 ```
 
-The generated library and associated `tres` will be placed in `bin/webrtc/` or `bin/webrtc_debug/` according to the desired target. You simply need to copy that folder to the root folder of your project.
+To build the GDNative library for Godot 3 add the `godot_version=3` option.
+
+The generated library and associated `tres` or `gdextension` will be placed in `bin/webrtc/` or `bin/webrtc_debug/` according to the desired target. You simply need to copy that folder to the root folder of your project.
