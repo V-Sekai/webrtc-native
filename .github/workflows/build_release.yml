@@ -169,6 +169,7 @@ jobs:
           if [ "${GODOT_VERSION}" != "3" ]; then
               cd ${GODOT_CPP}
               patch -p1 < ../misc/patches/cpp_array_assign.diff
+              patch -p1 < ../misc/patches/scons.diff
               cp ../misc/patches/extension_api.json godot-headers/extension_api.json
           fi
 
