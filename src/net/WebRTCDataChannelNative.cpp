@@ -86,7 +86,7 @@ godot_int get_ready_state_wdc(const void *user) {
 }
 
 const char *get_label_wdc(const void *user) {
-	return ((WebRTCDataChannelNative *)user)->_get_label().utf8().get_data(); // TODO is this gone?
+	return ((WebRTCDataChannelNative *)user)->_get_label().utf8().get_data();
 }
 
 bool is_ordered_wdc(const void *user) {
@@ -106,7 +106,7 @@ int get_max_retransmits_wdc(const void *user) {
 }
 
 const char *get_protocol_wdc(const void *user) {
-	return ((WebRTCDataChannelNative *)user)->_get_protocol().utf8().get_data(); // TODO is this gone?
+	return ((WebRTCDataChannelNative *)user)->_get_protocol().utf8().get_data();
 }
 
 bool is_negotiated_wdc(const void *user) {
