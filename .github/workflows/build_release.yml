@@ -104,7 +104,7 @@ jobs:
             msvc_arch: amd64
 
     env:
-      SCONSFLAGS: ${{ matrix.sconsflags }} godot_version=${{ env.GODOT_VERSION }} platform=${{ matrix.platform }} --jobs=2
+      SCONSFLAGS: ${{ matrix.sconsflags }} platform=${{ matrix.platform }} --jobs=2
       NDK_VERSION: 22b
       ANDROID_NDK_ROOT: ${{github.workspace}}/android-ndk-r22b
       MSVC_VARS: 'C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat'
@@ -178,8 +178,8 @@ jobs:
 
       - name: Compilation ${{ matrix.platform }} - ${{ matrix.arch }} - webrtc-native
         run: |
-          scons target=debug
-          scons target=release
+          scons target=debug godot_version=${GODOT_VERSION}
+          scons target=release godot_version=${GODOT_VERSION}
 
       - uses: actions/upload-artifact@v2
         with:
