@@ -305,7 +305,6 @@ else:
 env.Append(CPPPATH=[webrtc_dir + "/include", webrtc_dir + "/include/third_party/abseil-cpp"])
 
 if target_platform == "linux":
-    env.Append(LIBS=[lib_name, "atomic"])
     env.Append(LIBPATH=[lib_path])
     env.Append(CCFLAGS=["-DWEBRTC_POSIX", "-DWEBRTC_LINUX"])
     env.Append(CCFLAGS=["-DRTC_UNUSED=''", "-DNO_RETURN=''"])
