@@ -100,7 +100,7 @@ jobs:
             msvc_arch: amd64
 
     env:
-      SCONSFLAGS: ${{ matrix.sconsflags }} platform=${{ matrix.platform }} --jobs=2
+      SCONSFLAGS: ${{ matrix.sconsflags }} godot_version=3 platform=${{ matrix.platform }} --jobs=2
       NDK_VERSION: 22b
       ANDROID_NDK_ROOT: ${{github.workspace}}/android-ndk-r22b
       MSVC_VARS: 'C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat'
