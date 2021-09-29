@@ -128,8 +128,8 @@ public:
 	virtual void _close() = 0;
 
 	/* PacketPeer */
-	virtual int64_t _get_packet(const void *r_buffer, int32_t *r_len) = 0;
-	virtual int64_t _put_packet(const void *p_buffer, int64_t p_len) = 0;
+	virtual int64_t _get_packet(const uint8_t **r_buffer, int32_t *r_len) = 0;
+	virtual int64_t _put_packet(const uint8_t *p_buffer, int64_t p_len) = 0;
 	virtual int64_t _get_available_packet_count() const = 0;
 	virtual int64_t _get_max_packet_size() const = 0;
 

@@ -167,7 +167,7 @@ void WebRTCLibDataChannel::_close() {
 	}
 }
 
-int64_t WebRTCLibDataChannel::_get_packet(const void *r_buffer, int32_t *r_len) {
+int64_t WebRTCLibDataChannel::_get_packet(const uint8_t **r_buffer, int32_t *r_len) {
 	ERR_FAIL_COND_V(packet_queue.empty(), ERR_UNAVAILABLE);
 
 	mutex->lock();
@@ -176,7 +176,7 @@ int64_t WebRTCLibDataChannel::_get_packet(const void *r_buffer, int32_t *r_len) 
 	current_packet = packet_queue.front();
 	packet_queue.pop();
 	// Set out buffer and size (buffer will be gone at next get_packet or close)
-	*((uint8_t **)r_buffer) = &current_packet[0];
+	*r_buffer = &current_packet[0];
 	*r_len = current_packet.size();
 
 	mutex->unlock();
@@ -184,10 +184,10 @@ int64_t WebRTCLibDataChannel::_get_packet(const void *r_buffer, int32_t *r_len) 
 	return 0;
 }
 
-int64_t WebRTCLibDataChannel::_put_packet(const void *p_buffer, int64_t p_len) {
+int64_t WebRTCLibDataChannel::_put_packet(const uint8_t *p_buffer, int64_t p_len) {
 	ERR_FAIL_COND_V(channel.get() == nullptr, ERR_UNAVAILABLE);
 
-	webrtc::DataBuffer webrtc_buffer(rtc::CopyOnWriteBuffer((const uint8_t *)p_buffer, p_len), true);
+	webrtc::DataBuffer webrtc_buffer(rtc::CopyOnWriteBuffer(p_buffer, p_len), true);
 	ERR_FAIL_COND_V(!channel->Send(webrtc_buffer), FAILED);
 
 	return 0;
