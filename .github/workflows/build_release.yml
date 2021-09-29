@@ -1,6 +1,10 @@
 name: 🔧 Build -> Package 📦
 on: [push, pull_request]
 
+env:
+  GODOT_VERSION: '3'
+  GODOT_CPP: 'godot-cpp-3.x'
+
 jobs:
   static-checks:
     name: 📊 Static Checks (clang-format, black format, file format)
@@ -100,7 +104,7 @@ jobs:
             msvc_arch: amd64
 
     env:
-      SCONSFLAGS: ${{ matrix.sconsflags }} godot_version=3 platform=${{ matrix.platform }} --jobs=2
+      SCONSFLAGS: ${{ matrix.sconsflags }} godot_version=${{ env.GODOT_VERSION }} platform=${{ matrix.platform }} --jobs=2
       NDK_VERSION: 22b
       ANDROID_NDK_ROOT: ${{github.workspace}}/android-ndk-r22b
       MSVC_VARS: 'C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat'
@@ -162,15 +166,15 @@ jobs:
       - name: Fix godot-cpp revision and file names for OSX arm64 build.
         if: ${{ matrix.platform == 'osx' && matrix.arch == 'arm64' }}
         run: |
-          cd godot-cpp
+          cd ${GODOT_CPP}
           mkdir bin
           ln -s libgodot-cpp.osx.debug.64.a bin/libgodot-cpp.osx.debug.arm64.a
           ln -s libgodot-cpp.osx.release.64.a bin/libgodot-cpp.osx.release.arm64.a
 
       - name: Compilation ${{ matrix.platform }} - ${{ matrix.arch }} - godot-cpp
         run: |
-          scons -C godot-cpp target=debug generate_bindings=yes
-          scons -C godot-cpp target=release
+          scons -C ${GODOT_CPP} target=debug generate_bindings=yes
+          scons -C ${GODOT_CPP} target=release
 
       - name: Compilation ${{ matrix.platform }} - ${{ matrix.arch }} - webrtc-native
         run: |
