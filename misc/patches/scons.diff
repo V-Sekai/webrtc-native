@@ -1,20 +1,18 @@
 diff --git a/SConstruct b/SConstruct
-index a6f792c..11c5ea8 100644
+index a6f792c..038cd66 100644
 --- a/SConstruct
 +++ b/SConstruct
-@@ -147,6 +147,11 @@ opts.Add(BoolVariable("generate_template_get_node", "Generate a template version
+@@ -147,6 +147,9 @@ opts.Add(BoolVariable("generate_template_get_node", "Generate a template version
  opts.Update(env)
  Help(opts.GenerateHelpText(env))
  
-+if env["platform"] == "windows":
-+    env.Append(CXXFLAGS=["/std:c++17"])
-+else:
++if env["platform"] != "windows":
 +    env.Append(CXXFLAGS=["-std=c++17"])
 +
  # This makes sure to keep the session environment variables on Windows.
  # This way, you can run SCons in a Visual Studio 2017 prompt and it will find
  # all the required tools
-@@ -165,7 +170,7 @@ if env["platform"] == "linux" or env["platform"] == "freebsd":
+@@ -165,7 +168,7 @@ if env["platform"] == "linux" or env["platform"] == "freebsd":
      if env["use_llvm"]:
          env["CXX"] = "clang++"
  
@@ -23,7 +21,7 @@ index a6f792c..11c5ea8 100644
      env.Append(LINKFLAGS=["-Wl,-R,'$$ORIGIN'"])
  
      if env["target"] == "debug":
-@@ -187,7 +192,7 @@ elif env["platform"] == "osx":
+@@ -187,7 +190,7 @@ elif env["platform"] == "osx":
      if env["bits"] == "32":
          raise ValueError("Only 64-bit builds are supported for the macOS target.")
  
@@ -32,7 +30,7 @@ index a6f792c..11c5ea8 100644
  
      if env["macos_deployment_target"] != "default":
          env.Append(CCFLAGS=["-mmacosx-version-min=" + env["macos_deployment_target"]])
-@@ -234,7 +239,7 @@ elif env["platform"] == "ios":
+@@ -234,7 +237,7 @@ elif env["platform"] == "ios":
      env["AR"] = compiler_path + "ar"
      env["RANLIB"] = compiler_path + "ranlib"
  
@@ -41,12 +39,11 @@ index a6f792c..11c5ea8 100644
      env.Append(
          LINKFLAGS=[
              "-arch",
-@@ -287,7 +292,7 @@ elif env["platform"] == "windows":
-     # Native or cross-compilation using MinGW
-     if host_platform == "linux" or host_platform == "freebsd" or host_platform == "osx" or env["use_mingw"]:
-         # These options are for a release build even using target=debug
--        env.Append(CCFLAGS=["-O3", "-std=c++17", "-Wwrite-strings"])
-+        env.Append(CCFLAGS=["-O3", "-Wwrite-strings"])
-         env.Append(
-             LINKFLAGS=[
-                 "--static",
+@@ -258,6 +261,7 @@ elif env["platform"] == "windows":
+         # MSVC
+         env.Append(CPPDEFINES=["TYPED_METHOD_BIND"])
+         env.Append(LINKFLAGS=["/WX"])
++        env.Append(CCFLAGS=["/std:c++17"])
+         if env["target"] == "debug":
+             env.Append(CCFLAGS=["/Z7", "/Od", "/EHsc", "/D_DEBUG", "/MDd"])
+         elif env["target"] == "release":

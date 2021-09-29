@@ -104,7 +104,8 @@ if "CXX" in env and "clang" in os.path.basename(env["CXX"]):
     env["use_llvm"] = True
 
 # Require C++17
-env.Append(CCFLAGS=["-std=c++17"])
+if target_platform != "windows":
+    env.Append(CCFLAGS=["-std=c++17"])
 
 if target_platform == "linux":
     env["CXX"] = "g++"
@@ -138,6 +139,7 @@ elif target_platform == "windows":
 
         lib_prefix = "lib"
         env.Append(LINKFLAGS=["/WX"])
+        env.Append(CCFLAGS=["/std:c++17"])
         if target == "debug":
             env.Append(CCFLAGS=["/EHsc", "/D_DEBUG", "/MDd"])
         else:
@@ -153,7 +155,7 @@ elif target_platform == "windows":
         elif env["target"] == "release":
             env.Append(CCFLAGS=["-O3"])
 
-        env.Append(CCFLAGS=["-Wwrite-strings"])
+        env.Append(CCFLAGS=["-std=c++17", "-Wwrite-strings"])
         env.Append(LINKFLAGS=["--static", "-Wl,--no-undefined", "-static-libgcc", "-static-libstdc++"])
 
 elif target_platform == "osx":
