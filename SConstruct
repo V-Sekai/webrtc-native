@@ -379,7 +379,7 @@ if env["godot_version"] == "4":
     sources.append("src/init_gdextension.cpp")
 else:
     env.Append(CPPPATH=[godot_cpp + "/include", godot_cpp + "/include/core", godot_cpp + "/include/gen"])
-    env.Append(CPPDEFINES=["-DGDNATIVE_WEBRTC"])
+    env.Append(CPPDEFINES=["GDNATIVE_WEBRTC"])
     sources.append("src/init_gdnative.cpp")
     add_sources(sources, "src/net/", "cpp")
 
