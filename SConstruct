@@ -73,8 +73,8 @@ opts.Add(
 opts.Add("macos_sdk_path", "macOS SDK path", "")
 opts.Add(EnumVariable("macos_arch", "Target macOS architecture", "x86_64", ["x86_64", "arm64"]))
 
-opts.Add("godot_headers", "Godot headers directory", "godot-cpp/godot-headers")
-opts.Add("godot_cpp", "Godot C++ bindings headers directory", "godot-cpp/")
+opts.Add("godot_headers", "Godot headers directory", "")
+opts.Add("godot_cpp", "Godot C++ bindings headers directory", "")
 opts.Add(EnumVariable("godot_version", "The Godot target version", "4", ["3", "4"]))
 
 # Update environment (parse options)
@@ -89,6 +89,10 @@ elif target_platform == "ios":
 
 host_platform = platform.system()
 # Local dependency paths, adapt them to your setup
+if not env["godot_cpp"]:
+    env["godot_cpp"] = "godot-cpp-3.x" if env["godot_version"] == "3" else "godot-cpp"
+if not env["godot_headers"]:
+    env["godot_headers"] = os.path.join(env["godot_cpp"], "godot-headers")
 godot_headers = env["godot_headers"]
 godot_cpp = env["godot_cpp"]
 godot_cpp_lib_dir = os.path.join(env["godot_cpp"], "bin")
