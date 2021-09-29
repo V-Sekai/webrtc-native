@@ -32,12 +32,12 @@
 #define WEBRTC_DATA_CHANNEL_H
 
 #ifdef GDNATIVE_WEBRTC
-#include <Godot.hpp> // Godot.hpp must go first, or windows builds breaks
 #include "net/WebRTCDataChannelNative.hpp"
+#include <Godot.hpp> // Godot.hpp must go first, or windows builds breaks
 #undef GDCLASS
 #define GDCLASS(arg1, arg2) GODOT_CLASS(WebRTCLibDataChannel, WebRTCDataChannelNative);
 namespace godot {
-	using WebRTCDataChannelExtension = WebRTCDataChannelNative;
+using WebRTCDataChannelExtension = WebRTCDataChannelNative;
 };
 #else
 #include <godot_cpp/classes/web_rtc_data_channel_extension.hpp>

@@ -32,12 +32,12 @@
 #define WEBRTC_PEER_H
 
 #ifdef GDNATIVE_WEBRTC
-#include <Godot.hpp> // Godot.hpp must go first, or windows builds breaks
 #include "net/WebRTCPeerConnectionNative.hpp"
+#include <Godot.hpp> // Godot.hpp must go first, or windows builds breaks
 #undef GDCLASS
 #define GDCLASS(arg1, arg2) GODOT_CLASS(WebRTCLibPeerConnection, WebRTCPeerConnectionNative);
 namespace godot {
-	using WebRTCPeerConnectionExtension = WebRTCPeerConnectionNative;
+using WebRTCPeerConnectionExtension = WebRTCPeerConnectionNative;
 };
 #else
 #include <godot_cpp/classes/web_rtc_peer_connection_extension.hpp>
