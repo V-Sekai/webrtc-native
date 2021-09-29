@@ -1,12 +1,12 @@
 diff --git a/SConstruct b/SConstruct
-index a6f792c..7562f37 100644
+index a6f792c..11c5ea8 100644
 --- a/SConstruct
 +++ b/SConstruct
 @@ -147,6 +147,11 @@ opts.Add(BoolVariable("generate_template_get_node", "Generate a template version
  opts.Update(env)
  Help(opts.GenerateHelpText(env))
  
-+if platform == "windows":
++if env["platform"] == "windows":
 +    env.Append(CXXFLAGS=["/std:c++17"])
 +else:
 +    env.Append(CXXFLAGS=["-std=c++17"])
